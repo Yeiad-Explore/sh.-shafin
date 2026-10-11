@@ -14,6 +14,7 @@ import Faq from "@/components/site/Faq";
 import Contact from "@/components/site/Contact";
 import Footer from "@/components/site/Footer";
 import WhatsAppButton from "@/components/site/WhatsAppButton";
+import ChatWidget from "@/components/site/ChatWidget";
 import type { SectionKey } from "@/lib/types";
 
 const SECTION: Record<SectionKey, (props: { n: number }) => React.ReactNode> = {
@@ -91,6 +92,7 @@ export default async function Home() {
         <Footer />
       </div>
       <WhatsAppButton />
+      <ChatWidget />
       <MotionRuntime />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     </SiteProvider>

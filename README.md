@@ -69,6 +69,21 @@ Every new enrollment fires the `enrollment_email` trigger (`supabase/migrations/
 - Redeploy after editing the function: `npx supabase functions deploy notify-enrollment --no-verify-jwt --use-api --project-ref aiimjgswojvnigzrhsgv`
 - Debugging: `select * from net._http_response order by created desc limit 5;` in the SQL editor, or check the function logs in the dashboard.
 
+## Chat assistant (Azure OpenAI)
+
+The round button above the WhatsApp button opens an AI assistant (`src/components/site/ChatWidget.tsx`). It posts to `/api/chat` (`src/app/api/chat/route.ts`), which builds a system prompt from the same published content as the page (`getSiteData()` → `src/lib/chat-context.ts`), calls Azure OpenAI and streams the reply back as plain text. Edits made in `/admin` (fees, batches, seats, FAQ) reach the assistant along with the page.
+
+Server-only env vars (never prefix them with `NEXT_PUBLIC_`), in `.env.local` and on Vercel:
+
+```
+AZURE_OPENAI_ENDPOINT=https://studynet-ai-agent.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2025-01-01-preview
+AZURE_OPENAI_DEPLOYMENT=<deployment name from Azure AI Foundry>
+AZURE_OPENAI_API_KEY=<key>
+```
+
+Without them the route returns 503 and the widget says the assistant isn't set up. The route keeps the last 12 messages at up to 1,000 characters each, and allows each IP 20 requests per 10 minutes. That limit lives in memory per server instance, so it's best-effort; set a spending cap in Azure too.
+
 ## Deploy (Vercel)
 
 Import the `shafin-site` folder, add the three env vars above, and attach the custom domain. That's all the deploy needs.
