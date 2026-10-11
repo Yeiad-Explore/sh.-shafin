@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { PlateHeader, LeaderLabel, tilt } from "./bits";
@@ -40,12 +40,19 @@ function bestBatch(batches: Batch[]): Batch | undefined {
   return [...batches].sort((a, b) => seatsLeft(b) - seatsLeft(a))[0];
 }
 
+/** Border glow, adapted from Magic UI's magic-card: the pointer position feeds CSS variables, so the card never re-renders. */
+function trackGlow(e: PointerEvent<HTMLElement>) {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+  e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+}
+
 function CourseCard({ course, batches, onDetails }: { course: Course; batches: Batch[]; onDetails: () => void }) {
   const { subjectById, enrollCourse } = useSite();
   const subject = course.subject_id ? subjectById.get(course.subject_id) : undefined;
   const b = bestBatch(batches);
   return (
-    <article className="ccard" style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--ink)" } as CSSProperties}>
+    <article className="ccard" onPointerMove={trackGlow} style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--ink)" } as CSSProperties}>
       <span className="ccard__stripe" aria-hidden="true" />
       <span className="ccard__hint" aria-hidden="true">
         <LeaderLabel reverse length={36}>

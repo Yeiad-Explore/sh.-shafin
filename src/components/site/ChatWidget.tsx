@@ -3,11 +3,20 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useSite } from "./SiteProvider";
+import ThoughtLine from "./ThoughtLine";
 
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  /** Trace shown in the ThoughtLine above an assistant reply. */
+  steps?: string[];
+  /** Seconds it thought for, frozen once the reply starts. */
+  thought?: number;
 }
+
+// What the server does between the question and the first word of the answer.
+const STEPS = ["Reading your question", "Checking Shafin's courses, batches and fees", "Writing the answer"];
+const STEP_AT_MS = [0, 700, 1600];
 
 const SUGGESTIONS = ["Which batches still have seats?", "How do I book a free trial class?", "What are the fees?", "Explain photosynthesis simply"];
 
@@ -102,10 +111,15 @@ export default function ChatWidget() {
     const content = text.trim();
     if (!content || busy || exhausted) return;
     const history: Msg[] = [...msgs, { role: "user", content }];
-    setMsgs([...history, { role: "assistant", content: "" }]);
+    setMsgs([...history, { role: "assistant", content: "", steps: [STEPS[0]] }]);
     setInput("");
     setError(null);
     setBusy(true);
+
+    const patchLast = (fn: (m: Msg) => Msg) => setMsgs((prev) => prev.map((m, i) => (i === prev.length - 1 ? fn(m) : m)));
+    const stepTimers = STEP_AT_MS.slice(1).map((ms, i) =>
+      setTimeout(() => patchLast((m) => (m.content ? m : { ...m, steps: STEPS.slice(0, i + 2) })), ms),
+    );
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -113,7 +127,7 @@ export default function ChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history.map(({ role, content }) => ({ role, content })) }),
         signal: ctrl.signal,
       });
       const left = res.headers.get("X-Chat-Remaining");
@@ -130,7 +144,9 @@ export default function ChatWidget() {
         const { done, value } = await reader.read();
         if (done) break;
         reply += decoder.decode(value, { stream: true });
-        setMsgs([...history, { role: "assistant", content: reply }]);
+        stepTimers.forEach(clearTimeout);
+        const text = reply;
+        patchLast((m) => ({ ...m, content: text }));
       }
       if (!reply.trim()) throw new Error("No reply came back. Please try again.");
     } catch (err) {
@@ -138,6 +154,7 @@ export default function ChatWidget() {
       setMsgs(history);
       setError((err as Error).message);
     } finally {
+      stepTimers.forEach(clearTimeout);
       setBusy(false);
       abortRef.current = null;
     }
@@ -219,18 +236,32 @@ export default function ChatWidget() {
                 </p>
               </div>
               {msgs.map((m, i) =>
-                m.role === "assistant" && !m.content ? null : (
-                  <div key={i} className={`chat__msg chat__msg--${m.role === "user" ? "user" : "bot"}`}>
-                    {m.role === "user" ? <p>{m.content}</p> : <Rich text={m.content} />}
+                m.role === "user" ? (
+                  <div key={i} className="chat__msg chat__msg--user">
+                    <p>{m.content}</p>
+                  </div>
+                ) : (
+                  <div key={i} className="chat__turn">
+                    {m.steps && (
+                      <ThoughtLine
+                        className="chat__thought"
+                        working={!m.content}
+                        steps={m.steps}
+                        elapsed={m.thought}
+                        onSettle={(sec) => setMsgs((prev) => prev.map((x, j) => (j === i ? { ...x, thought: sec } : x)))}
+                        fontSize={13}
+                        color="var(--graphite)"
+                        glyphColor="var(--bio)"
+                        settleDuration={400}
+                      />
+                    )}
+                    {m.content && (
+                      <div className="chat__msg chat__msg--bot">
+                        <Rich text={m.content} />
+                      </div>
+                    )}
                   </div>
                 ),
-              )}
-              {busy && !msgs.at(-1)?.content && (
-                <div className="chat__msg chat__msg--bot chat__typing" aria-label="Shafin AI is typing">
-                  <span />
-                  <span />
-                  <span />
-                </div>
               )}
               {error && (
                 <p className="chat__error" role="alert">
@@ -274,17 +305,6 @@ export default function ChatWidget() {
                 </svg>
               </button>
             </form>
-            <p className="chat__note">
-              {remaining !== null && (
-                <>
-                  <span className={exhausted ? "chat__left is-out" : "chat__left"}>
-                    {remaining} of {limit} questions left today
-                  </span>
-                  {" · "}
-                </>
-              )}
-              AI answers can be wrong. Don&apos;t share personal details here. To enroll, use {contactHint}.
-            </p>
           </motion.section>
         )}
       </AnimatePresence>
