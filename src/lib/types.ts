@@ -21,6 +21,7 @@ export interface SiteSettings {
   payment_methods: string[];
   notice: string | null;
   notice_active: boolean;
+  chat_enabled: boolean;
   sections: Record<SectionKey, boolean>;
   section_order: SectionKey[];
 }

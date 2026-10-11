@@ -143,6 +143,16 @@ export default function SiteSettings() {
           </div>
 
           <div className="adm-field adm-field--full">
+            <span className="adm-label">Shafin AI (chat assistant)</span>
+            <label className="adm-switch">
+              <input type="checkbox" checked={s.chat_enabled !== false} onChange={(e) => set("chat_enabled", e.target.checked)} />
+              <span className="adm-switch__track" aria-hidden="true" />
+              <span>{s.chat_enabled !== false ? "On — visitors can ask questions (10 per day each)" : "Off — the chat button is hidden"}</span>
+            </label>
+            <span className="adm-help">It answers from the courses, batches, fees and FAQ you publish here.</span>
+          </div>
+
+          <div className="adm-field adm-field--full">
             <span className="adm-label">Sections — order and visibility</span>
             <ul className="adm-sections">
               {s.section_order.map((k, i) => (

@@ -23,6 +23,8 @@ export const fallbackData: SiteData = {
     payment_methods: [],
     notice: null,
     notice_active: false,
+    // The chat limiter needs Supabase, so the assistant stays hidden when it is unreachable.
+    chat_enabled: false,
     sections: { about: true, subjects: true, courses: true, schedule: true, results: true, faq: true, contact: true },
     section_order: ["about", "subjects", "courses", "schedule", "results", "faq", "contact"],
   },

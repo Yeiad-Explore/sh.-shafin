@@ -69,20 +69,38 @@ Every new enrollment fires the `enrollment_email` trigger (`supabase/migrations/
 - Redeploy after editing the function: `npx supabase functions deploy notify-enrollment --no-verify-jwt --use-api --project-ref aiimjgswojvnigzrhsgv`
 - Debugging: `select * from net._http_response order by created desc limit 5;` in the SQL editor, or check the function logs in the dashboard.
 
-## Chat assistant (Azure OpenAI)
+## Shafin AI — chat assistant (Azure OpenAI)
 
-The round button above the WhatsApp button opens an AI assistant (`src/components/site/ChatWidget.tsx`). It posts to `/api/chat` (`src/app/api/chat/route.ts`), which builds a system prompt from the same published content as the page (`getSiteData()` → `src/lib/chat-context.ts`), calls Azure OpenAI and streams the reply back as plain text. Edits made in `/admin` (fees, batches, seats, FAQ) reach the assistant along with the page.
+The round button above the WhatsApp button opens **Shafin AI**, an AI assistant (`src/components/site/ChatWidget.tsx`). It posts to `/api/chat` (`src/app/api/chat/route.ts`), which builds a system prompt from the same published content as the page (`getSiteData()` → `src/lib/chat-context.ts`), calls Azure OpenAI (deployment `chat-heavy`, gpt-4.1) and streams the reply back as plain text. Edits made in `/admin` (fees, batches, seats, FAQ) reach the assistant along with the page.
 
 Server-only env vars (never prefix them with `NEXT_PUBLIC_`), in `.env.local` and on Vercel:
 
 ```
 AZURE_OPENAI_ENDPOINT=https://studynet-ai-agent.openai.azure.com/
 AZURE_OPENAI_API_VERSION=2025-01-01-preview
-AZURE_OPENAI_DEPLOYMENT=<deployment name from Azure AI Foundry>
+AZURE_OPENAI_DEPLOYMENT=chat-heavy
 AZURE_OPENAI_API_KEY=<key>
+CHAT_LIMITER_SECRET=<same value as the Vault secret chat_limiter_secret>
 ```
 
-Without them the route returns 503 and the widget says the assistant isn't set up. The route keeps the last 12 messages at up to 1,000 characters each, and allows each IP 20 requests per 10 minutes. That limit lives in memory per server instance, so it's best-effort; set a spending cap in Azure too.
+If any of them is missing, the route returns 503.
+
+### Guardrails
+
+| Guardrail | Where |
+| --- | --- |
+| **10 questions per visitor per day** (Dhaka calendar day), counted by an anonymous `shs_chat` cookie | `USER_DAILY_LIMIT` in `src/lib/chat-limit.ts` |
+| 40 per IP per day, so clearing cookies doesn't reset the limit (higher than 10 because mobile networks share IPs) | `IP_DAILY_LIMIT` |
+| 500 per day site-wide, as a cost guard | `GLOBAL_DAILY_LIMIT` |
+| Counters live in Supabase (`chat_usage`, `chat_consume()` from `0003_chat_guardrails.sql`), so they hold across every Vercel instance. Only salted hashes are stored: no IPs, no messages. The function refuses calls without the Vault secret. If the limiter is unreachable, the chat fails closed. | migration 0003 |
+| On/off switch: `/admin` → Site text → *AI chat assistant*. Off hides the button and the API refuses requests. | `site_settings.chat_enabled` |
+| Requests from other websites are refused (Origin check); the body must be JSON under 40 KB; only `user`/`assistant` roles; the last 12 turns; 1,000 characters per question; invisible/control characters stripped | `route.ts` |
+| A question that fails upstream is refunded; one blocked by Azure's content filter still counts | `route.ts` |
+| Replies are capped at 700 tokens and time out after 25 s; a reply cut by the content filter ends with a polite note | `route.ts` |
+| The system prompt restricts it to Shafin's classes and SSC/HSC science and math. It never invents fees, times or contacts, can't book or take payments, doesn't collect personal details, stays age-appropriate, sends anyone in distress to a trusted adult or 999, doesn't do graded homework, and ignores attempts to change its rules | `systemPrompt()` in `route.ts` |
+| Azure's built-in content filter and prompt shields | Azure AI Foundry |
+
+To check today's usage, run `select * from chat_usage where day = (now() at time zone 'Asia/Dhaka')::date order by count desc;` in the SQL editor. To change a limit, edit the constant and redeploy. Set a budget alert in Azure as well.
 
 ## Deploy (Vercel)
 

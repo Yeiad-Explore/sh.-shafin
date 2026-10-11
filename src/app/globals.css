@@ -2697,6 +2697,16 @@ textarea.field__input {
   color: var(--paper);
   transition: opacity var(--d-short);
 }
+.chat__form textarea:disabled {
+  background: var(--paper-2);
+  cursor: not-allowed;
+}
+.chat__left {
+  color: var(--ink);
+}
+.chat__left.is-out {
+  color: var(--math);
+}
 .chat__send:disabled {
   opacity: 0.35;
   cursor: default;

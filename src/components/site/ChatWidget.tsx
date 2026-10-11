@@ -44,6 +44,8 @@ export default function ChatWidget() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [limit, setLimit] = useState(10);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
@@ -76,9 +78,29 @@ export default function ChatWidget() {
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Ask the server how many questions are left today the first time the panel opens.
+  useEffect(() => {
+    if (!open || remaining !== null) return;
+    let live = true;
+    fetch("/api/chat", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j: { enabled: boolean; remaining: number; limit: number }) => {
+        if (!live) return;
+        setLimit(j.limit);
+        setRemaining(j.remaining);
+        if (!j.enabled) setError("Shafin AI is unavailable right now. Please use the Contact form.");
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [open, remaining]);
+
+  const exhausted = remaining === 0;
+
   async function send(text: string) {
     const content = text.trim();
-    if (!content || busy) return;
+    if (!content || busy || exhausted) return;
     const history: Msg[] = [...msgs, { role: "user", content }];
     setMsgs([...history, { role: "assistant", content: "" }]);
     setInput("");
@@ -94,9 +116,12 @@ export default function ChatWidget() {
         body: JSON.stringify({ messages: history }),
         signal: ctrl.signal,
       });
+      const left = res.headers.get("X-Chat-Remaining");
+      if (left !== null) setRemaining(Number(left));
       if (!res.ok || !res.body) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.error || "The assistant is unavailable right now.");
+        if (typeof body?.remaining === "number") setRemaining(body.remaining);
+        throw new Error(body?.error || "Shafin AI is unavailable right now.");
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -130,6 +155,8 @@ export default function ChatWidget() {
     }
   }
 
+  if (data.settings.chat_enabled === false) return null;
+
   const contactHint = data.settings.whatsapp ? "the Contact form or WhatsApp" : "the Contact form";
 
   return (
@@ -141,7 +168,7 @@ export default function ChatWidget() {
         onClick={() => (open ? close() : setOpen(true))}
         aria-expanded={open}
         aria-controls="chat-panel"
-        aria-label={open ? "Close the assistant" : "Ask the assistant"}
+        aria-label={open ? "Close Shafin AI" : "Ask Shafin AI"}
       >
         <svg viewBox="0 0 32 32" aria-hidden="true">
           {open ? (
@@ -157,7 +184,7 @@ export default function ChatWidget() {
             />
           )}
         </svg>
-        {!open && <span className="chat-launch__tip t-label">Ask a question</span>}
+        {!open && <span className="chat-launch__tip t-label">Ask Shafin AI</span>}
       </button>
 
       <AnimatePresence>
@@ -166,7 +193,7 @@ export default function ChatWidget() {
             id="chat-panel"
             className="chat"
             role="dialog"
-            aria-label="Class assistant"
+            aria-label="Shafin AI"
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
@@ -174,10 +201,10 @@ export default function ChatWidget() {
           >
             <header className="chat__head">
               <div>
-                <p className="chat__kicker t-label">Field assistant · AI</p>
+                <p className="chat__kicker t-label">Shafin AI · Assistant</p>
                 <h2 className="chat__title">Ask about the classes</h2>
               </div>
-              <button type="button" className="chat__close" onClick={close} aria-label="Close the assistant">
+              <button type="button" className="chat__close" onClick={close} aria-label="Close Shafin AI">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
@@ -187,7 +214,7 @@ export default function ChatWidget() {
             <div ref={listRef} className="chat__list" data-lenis-prevent="" aria-live="polite">
               <div className="chat__msg chat__msg--bot">
                 <p>
-                  Hi! I can answer questions about Shafin&apos;s Biology, Physics, Chemistry and Math classes: courses, batches, fees and
+                  Hi, I&apos;m Shafin AI. I can answer questions about Shafin&apos;s Biology, Physics, Chemistry and Math classes: courses, batches, fees and
                   free trials. I can also explain a science topic. You can write in English or বাংলা.
                 </p>
               </div>
@@ -199,7 +226,7 @@ export default function ChatWidget() {
                 ),
               )}
               {busy && !msgs.at(-1)?.content && (
-                <div className="chat__msg chat__msg--bot chat__typing" aria-label="The assistant is typing">
+                <div className="chat__msg chat__msg--bot chat__typing" aria-label="Shafin AI is typing">
                   <span />
                   <span />
                   <span />
@@ -210,7 +237,12 @@ export default function ChatWidget() {
                   {error}
                 </p>
               )}
-              {!msgs.length && (
+              {exhausted && !error && (
+                <p className="chat__error" role="status">
+                  You&apos;ve used today&apos;s {limit} questions. Come back tomorrow, or reach Shafin through {contactHint}.
+                </p>
+              )}
+              {!msgs.length && !exhausted && (
                 <div className="chat__chips">
                   {SUGGESTIONS.map((s) => (
                     <button key={s} type="button" className="chat__chip" onClick={() => send(s)}>
@@ -233,15 +265,26 @@ export default function ChatWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Type your question…"
+                disabled={exhausted}
+                placeholder={exhausted ? "No questions left today" : "Type your question…"}
               />
-              <button type="submit" className="chat__send" disabled={busy || !input.trim()} aria-label="Send">
+              <button type="submit" className="chat__send" disabled={busy || exhausted || !input.trim()} aria-label="Send">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </form>
-            <p className="chat__note">AI answers can be wrong. To enroll, use {contactHint}.</p>
+            <p className="chat__note">
+              {remaining !== null && (
+                <>
+                  <span className={exhausted ? "chat__left is-out" : "chat__left"}>
+                    {remaining} of {limit} questions left today
+                  </span>
+                  {" · "}
+                </>
+              )}
+              AI answers can be wrong. Don&apos;t share personal details here. To enroll, use {contactHint}.
+            </p>
           </motion.section>
         )}
       </AnimatePresence>
