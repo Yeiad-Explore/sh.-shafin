@@ -6,8 +6,9 @@ import { useSite } from "./SiteProvider";
 import { useGrowthReach } from "@/lib/growth";
 import { BLOOM_EVENT, EASE_OUT, scrollToTarget } from "@/lib/motion";
 import { telLink, waLink } from "@/lib/format";
-import { useYear } from "@/lib/hooks";
+import { useMedia, useYear } from "@/lib/hooks";
 import type { SectionKey } from "@/lib/types";
+import { ShutterWordmark } from "@/components/ui/shutter-glyph-footer";
 
 const SECTION_LABEL: Record<SectionKey, string> = {
   about: "About",
@@ -58,6 +59,8 @@ export default function Footer({ sections }: { sections: SectionKey[] }) {
 
   const reduce = useReducedMotion();
   const year = useYear();
+  const narrow = useMedia("(max-width: 720px)");
+  const mark = narrow ? "Samiul\nHaque\nShafin *" : "Samiul Haque\nShafin *";
   const wa = waLink(settings.whatsapp, "Hi, I'd like to know about your science classes.");
   const tel = telLink(settings.phone);
   const since = Math.min(...(data.experience.length ? data.experience.map((e) => e.start_year) : [2022]));
@@ -88,9 +91,16 @@ export default function Footer({ sections }: { sections: SectionKey[] }) {
         <p className="t-label muted" style={{ margin: "0 0 12px" }}>
           Grown in Dhaka · since {since}
         </p>
-        <p className="footer__name t-display" aria-label="Md. Samiul Haque Shafin">
-          Samiul Haque Shafin
-        </p>
+        {/* One wordmark: two lines, or a word per line on phones. "*" marks where the shutter sits, after the name. */}
+        <ShutterWordmark
+          className="footer__name"
+          text={mark}
+          shutterAt={mark.indexOf("*")}
+          label="Md. Samiul Haque Shafin"
+          ink="var(--fg)"
+          shutterInk="var(--accent)"
+          style={narrow ? { maxWidth: 420 } : undefined}
+        />
 
         <div className="footer__grid">
           <motion.div className="footer__cta" {...col(0)}>

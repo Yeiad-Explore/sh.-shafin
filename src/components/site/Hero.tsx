@@ -119,10 +119,6 @@ export default function Hero() {
       <div className="wrap">
         <div className="hero__grid">
           <div className="hero__main">
-            <motion.p className="hero__kicker t-label" {...rise(0.05)}>
-              <span className="hero__pulse" aria-hidden="true" />
-              Science teacher · Dhaka · Since {teachingSince}
-            </motion.p>
             <motion.h1 id="hero-name" className="hero__name t-display t-hero" aria-label="Samiul Haque Shafin" style={reduce ? undefined : { y: nameY }}>
               {["Samiul", "Haque", "Shafin"].map((w, i) => (
                 <span key={w} className="split-mask" aria-hidden="true">

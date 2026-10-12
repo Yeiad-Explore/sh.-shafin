@@ -24,3 +24,16 @@ const todayDay = () => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Dat
 export function useToday() {
   return { iso: useClientValue(todayISO, ""), day: useClientValue(todayDay, "Sat") };
 }
+
+/** A live media query; prerender and hydration assume it doesn't match. */
+export function useMedia(query: string): boolean {
+  return useSyncExternalStore(
+    (on) => {
+      const mq = window.matchMedia(query);
+      mq.addEventListener("change", on);
+      return () => mq.removeEventListener("change", on);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
+}
