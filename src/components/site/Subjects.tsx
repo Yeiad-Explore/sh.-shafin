@@ -17,8 +17,10 @@ function Stamp() {
       </defs>
       <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" strokeWidth="1" />
-      <text style={{ fontFamily: "var(--font-mono-stack)", fontSize: 10.5, letterSpacing: "0.18em" }} fill="currentColor">
-        <textPath href="#stamp-circle">SPECIALTY · BOTANY · SPECIALTY ·</textPath>
+      <text style={{ fontFamily: "var(--font-mono-stack)", fontSize: 8.5 }} fill="currentColor">
+        <textPath href="#stamp-circle" textLength="224" lengthAdjust="spacing">
+          SPECIALTY · BOTANY · SPECIALTY · BOTANY ·
+        </textPath>
       </text>
       <path d="M40 58 C 42 46, 50 40, 62 38 C 60 50, 52 57, 40 58 Z M40 58 L 55 45" fill="none" stroke="currentColor" strokeWidth="1.2" />
     </svg>
@@ -52,7 +54,7 @@ function Plate({ subject, index, total, active }: { subject: Subject; index: num
       </div>
       <div className="splate__text">
         <div className="splate__num t-label">
-          {pad2(index + 1)} / {pad2(total)} · Plate {String.fromCharCode(65 + index)}
+          {pad2(index + 1)} / {pad2(total)} · Module {String.fromCharCode(65 + index)}
         </div>
         <h3 id={`subj-${subject.slug}`} className="splate__name t-display t-h2">
           {subject.name}

@@ -1,25 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { JetBrains_Mono } from "next/font/google";
+import { Geist, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const zodiak = localFont({
-  src: [
-    { path: "../fonts/Zodiak-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/Zodiak-Bold.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-zodiak",
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-space",
   display: "swap",
   preload: true,
 });
 
-const general = localFont({
-  src: [
-    { path: "../fonts/GeneralSans-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/GeneralSans-Medium.woff2", weight: "500", style: "normal" },
-    { path: "../fonts/GeneralSans-Semibold.woff2", weight: "600", style: "normal" },
-  ],
-  variable: "--font-general",
+const body = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
   display: "swap",
 });
 
@@ -63,7 +56,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F3EFE4",
+  themeColor: "#05070D",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -77,7 +70,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="en"
-      className={`${zodiak.variable} ${general.variable} ${jetbrains.variable}`}
+      className={`${display.variable} ${body.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >
       <head>

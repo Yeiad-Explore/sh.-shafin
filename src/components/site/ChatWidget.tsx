@@ -250,8 +250,8 @@ export default function ChatWidget() {
                         elapsed={m.thought}
                         onSettle={(sec) => setMsgs((prev) => prev.map((x, j) => (j === i ? { ...x, thought: sec } : x)))}
                         fontSize={13}
-                        color="var(--graphite)"
-                        glyphColor="var(--bio)"
+                        color="var(--page-fg-2)"
+                        glyphColor="var(--accent)"
                         settleDuration={400}
                       />
                     )}

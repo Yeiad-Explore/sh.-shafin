@@ -52,7 +52,7 @@ function CourseCard({ course, batches, onDetails }: { course: Course; batches: B
   const subject = course.subject_id ? subjectById.get(course.subject_id) : undefined;
   const b = bestBatch(batches);
   return (
-    <article className="ccard" onPointerMove={trackGlow} style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--ink)" } as CSSProperties}>
+    <article className="ccard" onPointerMove={trackGlow} style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--page-fg)" } as CSSProperties}>
       <span className="ccard__stripe" aria-hidden="true" />
       <span className="ccard__hint" aria-hidden="true">
         <LeaderLabel reverse length={36}>
@@ -201,7 +201,7 @@ function CourseDrawer({ course, batches, onClose }: { course: Course; batches: B
         role="dialog"
         aria-modal="true"
         aria-labelledby="drawer-title"
-        style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--ink)" } as CSSProperties}
+        style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--page-fg)" } as CSSProperties}
         initial={mobile ? { y: "100%" } : { x: "100%" }}
         animate={mobile ? { y: 0 } : { x: 0 }}
         exit={mobile ? { y: "100%" } : { x: "100%" }}
@@ -227,7 +227,7 @@ function CourseDrawer({ course, batches, onClose }: { course: Course; batches: B
 
         <h3 id="drawer-title">{course.title}</h3>
         {course.summary && <p style={{ margin: "0 0 8px" }}>{course.summary}</p>}
-        <p className="t-label" style={{ color: "var(--graphite)", margin: "0 0 8px" }}>
+        <p className="t-label" style={{ color: "var(--page-fg-2)", margin: "0 0 8px" }}>
           {fmtMode(course.mode)} {course.duration ? `· ${course.duration}` : ""}
         </p>
 
@@ -262,14 +262,14 @@ function CourseDrawer({ course, batches, onClose }: { course: Course; batches: B
 
         <section>
           <h4 className="t-label">Batches</h4>
-          {batches.length === 0 && <p style={{ margin: 0, color: "var(--graphite)" }}>New batch dates are announced soon — send a request to be told first.</p>}
+          {batches.length === 0 && <p style={{ margin: 0, color: "var(--page-fg-2)" }}>New batch dates are announced soon — send a request to be told first.</p>}
           {batches.map((b) => {
             const st = seatStatus(b);
             return (
               <div className="batch-row" key={b.id}>
                 <div>
                   <div style={{ fontWeight: 500 }}>{b.name}</div>
-                  <div className="t-label" style={{ color: "var(--graphite)" }}>
+                  <div className="t-label" style={{ color: "var(--page-fg-2)" }}>
                     {b.days.map((d) => DAY_LONG[d]?.slice(0, 3) ?? d).join(" · ")} · {fmtTime(b.start_time)}–{fmtTime(b.end_time)} · {fmtMode(b.mode)}
                     {b.start_date ? ` · starts ${fmtDate(b.start_date)}` : ""}
                   </div>
@@ -277,7 +277,7 @@ function CourseDrawer({ course, batches, onClose }: { course: Course; batches: B
                 <span className={`badge badge--${st}`}>{STATUS_LABEL[st]}</span>
                 <div style={{ gridColumn: "1 / -1", display: "flex", gap: 10, alignItems: "center" }}>
                   <SeatDots batch={b} />
-                  <span className="t-label" style={{ color: "var(--graphite)" }}>
+                  <span className="t-label" style={{ color: "var(--page-fg-2)" }}>
                     {seatsLeft(b)} of {b.seats_total} seats left
                   </span>
                 </div>
@@ -290,7 +290,7 @@ function CourseDrawer({ course, batches, onClose }: { course: Course; batches: B
           <h4 className="t-label">Fee</h4>
           <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "1.5rem" }}>{fmtFee(course.fee, course.fee_note)}</p>
           {payments.length > 0 && (
-            <p className="t-label" style={{ color: "var(--graphite)", margin: "8px 0 0" }}>
+            <p className="t-label" style={{ color: "var(--page-fg-2)", margin: "8px 0 0" }}>
               Pay by {payments.join(" · ")}
             </p>
           )}
@@ -302,7 +302,7 @@ function CourseDrawer({ course, batches, onClose }: { course: Course; batches: B
             {course.faqs.map((f) => (
               <div key={f.q} style={{ marginBottom: 12 }}>
                 <div style={{ fontWeight: 500 }}>{f.q}</div>
-                <div style={{ color: "var(--graphite)" }}>{f.a}</div>
+                <div style={{ color: "var(--page-fg-2)" }}>{f.a}</div>
               </div>
             ))}
           </section>

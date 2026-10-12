@@ -77,8 +77,16 @@ export default async function Home() {
         Skip to content
       </a>
       <Preloader />
-      <div className="paper-grid" aria-hidden="true" />
-      <div className="paper-grain" aria-hidden="true" />
+      <div className="fx" aria-hidden="true">
+        <div className="fx__aurora">
+          <span className="fx__blob fx__blob--a" />
+          <span className="fx__blob fx__blob--b" />
+          <span className="fx__blob fx__blob--c" />
+        </div>
+        <div className="fx__grid" />
+        <div className="fx__spot" />
+        <div className="fx__noise" />
+      </div>
       <Navbar sections={visible} />
       <div className="page">
         <GrowthLine />

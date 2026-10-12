@@ -1,5 +1,15 @@
-/* Admin — a tool, not a showcase: same paper, ink and type, no decoration. */
+/* Admin — a tool, not a showcase: paper, ink and type, no decoration. The public site's dark theme stays out of here. */
 .adm-root {
+  --paper: #f3efe4;
+  --paper-2: #e9e3d3;
+  --rule: #cfc7b3;
+  --ink: #16150f;
+  --graphite: #55534b;
+  --chalk-dim: #9c998f;
+  --bio: #3c7a2e;
+  --phy: #2747e0;
+  --chem: #c2771b;
+  --math: #d9401f;
   min-height: 100svh;
   background: var(--paper);
   color: var(--ink);

@@ -44,9 +44,9 @@ function Slot({ batch, delay }: { batch: Batch; delay?: number }) {
   const subject = course?.subject_id ? subjectById.get(course.subject_id) : undefined;
   const st = seatStatus(batch);
   return (
-    <div className="slot" style={{ "--delay": `${delay ?? 0}ms` } as CSSProperties}>
+    <div className="slot" style={{ "--delay": `${delay ?? 0}ms`, "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--accent)" } as CSSProperties}>
       <span className="slot__name">
-        <i style={{ background: subject ? SUBJECT_VAR[subject.slug] : "var(--page-fg)" }} aria-hidden="true" />
+        <i aria-hidden="true" />
         {batch.name}
       </span>
       <span className="slot__meta">

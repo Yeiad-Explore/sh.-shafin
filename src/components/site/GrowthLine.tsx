@@ -57,19 +57,23 @@ function lengthAt(s: Sampled, y: number): number {
 }
 
 /**
- * The Growth Line — one continuous ink stroke planted in the hero, measured at runtime from
+ * The Growth Line — one continuous glowing beam planted in the hero, measured at runtime from
  * [data-growth] anchors, drawn by scroll position (with a slight lag), and retracting on the way up.
  */
 export default function GrowthLine() {
   const svgRef = useRef<SVGSVGElement>(null);
   const mainRef = useRef<SVGPathElement>(null);
+  const glowRef = useRef<SVGPathElement>(null);
+  const tipRef = useRef<SVGGElement>(null);
   const strandRefs = useRef<(SVGPathElement | null)[]>([]);
 
   useEffect(() => {
     const svg = svgRef.current;
     const main = mainRef.current;
+    const glow = glowRef.current;
+    const tip = tipRef.current;
     const root = svg?.parentElement;
-    if (!svg || !main || !root) return;
+    if (!svg || !main || !glow || !tip || !root) return;
 
     const reduced = prefersReducedMotion();
     let paths: Sampled[] = [];
@@ -85,6 +89,7 @@ export default function GrowthLine() {
       const ox = rootRect.left;
       originY = rootRect.top + window.scrollY;
       svg.style.height = `${root.scrollHeight}px`;
+      svg.querySelector("#growth-beam")?.setAttribute("y2", String(root.scrollHeight));
 
       const anchors = Array.from(root.querySelectorAll<HTMLElement>("[data-growth]")).filter(
         (el) => el.offsetParent !== null || el.getClientRects().length > 0,
@@ -107,6 +112,7 @@ export default function GrowthLine() {
       }
       if (pts.length < 2) {
         main.setAttribute("d", "");
+        glow.setAttribute("d", "");
         paths = [];
         return;
       }
@@ -129,7 +135,9 @@ export default function GrowthLine() {
         }
       }
       main.setAttribute("d", d);
+      glow.setAttribute("d", d);
       paths = [sample(main)];
+      glow.style.strokeDasharray = main.style.strokeDasharray;
 
       // Courses: the four subject branches run beside the stem like pressed stems, then rejoin.
       const strandHost = root.querySelector<HTMLElement>("[data-growth-strands]");
@@ -155,6 +163,7 @@ export default function GrowthLine() {
 
       if (reduced) {
         paths.forEach((p) => (p.el.style.strokeDashoffset = "0"));
+        glow.style.strokeDashoffset = "0";
         growth.set(Number.POSITIVE_INFINITY);
       } else {
         current = targetY();
@@ -178,6 +187,16 @@ export default function GrowthLine() {
         if (force || Math.abs(len - p.last) > 0.25) {
           p.el.style.strokeDashoffset = `${(p.total - len).toFixed(2)}`;
           p.last = len;
+        }
+      }
+      const head = paths[0];
+      if (head) {
+        glow.style.strokeDashoffset = head.el.style.strokeDashoffset;
+        const visible = head.last > 2 && head.last < head.total - 2;
+        tip.style.opacity = visible ? "1" : "0";
+        if (visible) {
+          const p = head.el.getPointAtLength(head.last);
+          tip.setAttribute("transform", `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`);
         }
       }
       growth.set(current + originY);
@@ -222,6 +241,17 @@ export default function GrowthLine() {
 
   return (
     <svg ref={svgRef} className="growth" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="growth-beam" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="4000">
+          <stop offset="0" style={{ stopColor: "var(--accent)" }} />
+          <stop offset="0.5" style={{ stopColor: "var(--accent-2)" }} />
+          <stop offset="1" style={{ stopColor: "var(--accent)" }} />
+        </linearGradient>
+        <radialGradient id="growth-tip">
+          <stop offset="0" style={{ stopColor: "var(--accent)", stopOpacity: 0.9 }} />
+          <stop offset="1" style={{ stopColor: "var(--accent)", stopOpacity: 0 }} />
+        </radialGradient>
+      </defs>
       {STRANDS.map((s, i) => (
         <path
           key={s.colour}
@@ -232,7 +262,12 @@ export default function GrowthLine() {
           style={{ stroke: s.colour }}
         />
       ))}
+      <path ref={glowRef} className="growth__glow" />
       <path ref={mainRef} className="growth__main" />
+      <g ref={tipRef} className="growth__tip">
+        <circle r="18" fill="url(#growth-tip)" />
+        <circle r="2.5" className="growth__tip-core" />
+      </g>
     </svg>
   );
 }

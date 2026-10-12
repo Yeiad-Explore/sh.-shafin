@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { getLenis, prefersReducedMotion, scrollToTarget } from "@/lib/motion";
 import { pad2 } from "@/lib/format";
@@ -16,10 +16,10 @@ const LABELS: Partial<Record<SectionKey, string>> = {
 };
 
 const TINT: Partial<Record<SectionKey, string>> = {
-  about: "var(--page-fg)",
+  about: "var(--accent)",
   subjects: "var(--accent-current)",
   courses: "var(--chem)",
-  schedule: "var(--page-fg)",
+  schedule: "var(--accent-2)",
   results: "var(--bio)",
   contact: "var(--math)",
 };
@@ -127,12 +127,12 @@ export default function Navbar({ sections }: { sections: SectionKey[] }) {
               <li key={k}>
                 <a href={`#${k}`} className={`nav__link ${active === k ? "is-active" : ""}`} aria-current={active === k ? "true" : undefined}>
                   <span className="nav__link-n">{pad2(i + 1)}</span>
-                  {LABELS[k]}
+                  <span className="nav__link-t">{LABELS[k]}</span>
                   {active === k && (
                     <motion.span
                       layoutId="nav-leaf"
                       className="nav__leaf"
-                      style={{ background: TINT[k] }}
+                      style={{ "--tint": TINT[k] } as CSSProperties}
                       transition={{ type: "spring", stiffness: 220, damping: 26 }}
                     />
                   )}

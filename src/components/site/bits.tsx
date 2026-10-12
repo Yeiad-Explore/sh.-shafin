@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { pad2 } from "@/lib/format";
+import Scramble from "./Scramble";
 
 export function PlateHeader({
   n,
@@ -17,9 +18,11 @@ export function PlateHeader({
   return (
     <header className="plate-header" data-inview="">
       <div className="plate-header__meta t-label">
-        <span>
-          PL. {pad2(n)} — {label}
+        <span className="plate-header__idx">{pad2(n)}</span>
+        <span className="plate-header__slash" aria-hidden="true">
+          {"//"}
         </span>
+        <Scramble text={label} />
         <span className="plate-header__rule" />
       </div>
       <h2 id={id} className="plate-header__title t-display t-h2" data-split="">

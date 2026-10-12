@@ -118,7 +118,7 @@ export default function Results({ n }: { n: number }) {
                     )}
                     <div>
                       <div style={{ fontWeight: 500 }}>{t.name}</div>
-                      <div className="t-label" style={{ color: "var(--graphite)" }}>
+                      <div className="t-label" style={{ color: "var(--page-fg-2)" }}>
                         {t.role === "parent" ? "Parent" : "Student"}
                         {t.class_label ? ` · ${t.class_label}` : ""}
                       </div>
@@ -135,7 +135,7 @@ export default function Results({ n }: { n: number }) {
           </div>
         ) : (
           <div className="empty-note" data-reveal="fade">
-            <p className="t-label" style={{ color: "var(--graphite)", margin: "0 0 10px" }}>
+            <p className="t-label" style={{ color: "var(--page-fg-2)", margin: "0 0 10px" }}>
               Notes being collected
             </p>
             <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "1.25rem", lineHeight: 1.3 }}>

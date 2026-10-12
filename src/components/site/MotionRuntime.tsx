@@ -9,18 +9,14 @@ import { prefersReducedMotion, scrollToTarget, setLenis } from "@/lib/motion";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
-const PAPER = { "--page-bg": "#F3EFE4", "--page-fg": "#16150F", "--page-fg-2": "#55534B", "--page-rule": "#CFC7B3" };
-const SLATE = { "--page-bg": "#121614", "--page-fg": "#ECE8DC", "--page-fg-2": "#9C998F", "--page-rule": "#3B413D" };
-
 /**
  * Page-wide motion plumbing: Lenis smooth scroll synced to ScrollTrigger, the reveal observer,
- * masked headline splits, anchor links and the paper → slate transition.
+ * masked headline splits, anchor links and the cursor spotlight.
  */
 export default function MotionRuntime() {
   useEffect(() => {
     (window as unknown as { __shsReady: boolean }).__shsReady = true;
     const reduced = prefersReducedMotion();
-    const html = document.documentElement;
     const cleanups: (() => void)[] = [];
 
     // ── Smooth scroll ──
@@ -119,37 +115,34 @@ export default function MotionRuntime() {
     else document.fonts?.ready.then(runSplits);
     cleanups.push(() => splits.forEach((s) => s.revert()));
 
-    // ── Paper → slate as the Schedule plate enters, and back as it leaves ──
-    const slateEl = document.getElementById("schedule");
-    if (slateEl) {
-      if (reduced) {
-        const st = ScrollTrigger.create({
-          trigger: slateEl,
-          start: "top 50%",
-          end: "bottom 50%",
-          onToggle: (self) => gsap.set(html, self.isActive ? SLATE : PAPER),
-        });
-        cleanups.push(() => st.kill());
-      } else {
-        const enter = gsap.fromTo(html, { ...PAPER }, {
-          ...SLATE,
-          ease: "none",
-          scrollTrigger: { trigger: slateEl, start: "top 70%", end: "top 15%", scrub: 0.6 },
-        });
-        const leave = gsap.fromTo(html, { ...SLATE }, {
-          ...PAPER,
-          ease: "none",
-          immediateRender: false,
-          scrollTrigger: { trigger: slateEl, start: "bottom 75%", end: "bottom 20%", scrub: 0.6 },
-        });
-        cleanups.push(() => {
-          enter.scrollTrigger?.kill();
-          leave.scrollTrigger?.kill();
-          enter.kill();
-          leave.kill();
-          gsap.set(html, { clearProps: "--page-bg,--page-fg,--page-fg-2,--page-rule" });
-        });
-      }
+    // ── Cursor spotlight: a soft glow that trails the pointer (fine pointers only) ──
+    const spot = document.querySelector<HTMLElement>(".fx__spot");
+    if (spot && !reduced && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      let x = window.innerWidth / 2;
+      let y = window.innerHeight / 3;
+      let cx = x;
+      let cy = y;
+      let raf = 0;
+      const step = () => {
+        cx += (x - cx) * 0.12;
+        cy += (y - cy) * 0.12;
+        spot.style.transform = `translate3d(${cx.toFixed(1)}px, ${cy.toFixed(1)}px, 0)`;
+        raf = Math.abs(x - cx) + Math.abs(y - cy) > 0.5 ? requestAnimationFrame(step) : 0;
+      };
+      const onMove = (e: PointerEvent) => {
+        x = e.clientX;
+        y = e.clientY;
+        spot.classList.add("is-on");
+        if (!raf) raf = requestAnimationFrame(step);
+      };
+      const onLeave = () => spot.classList.remove("is-on");
+      window.addEventListener("pointermove", onMove, { passive: true });
+      document.documentElement.addEventListener("pointerleave", onLeave);
+      cleanups.push(() => {
+        cancelAnimationFrame(raf);
+        window.removeEventListener("pointermove", onMove);
+        document.documentElement.removeEventListener("pointerleave", onLeave);
+      });
     }
 
     // Layout settles after fonts/images: re-measure every trigger.

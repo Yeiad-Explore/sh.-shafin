@@ -253,7 +253,7 @@ export default function Contact({ n }: { n: number }) {
                   <button type="submit" className="btn btn--ink" data-growth="end" data-gx="left" data-gdx="-28">
                     {status === "sending" ? "Sending…" : "Send enrollment request"} <Arrow />
                   </button>
-                  <span id="slip-note" className="t-label" style={{ color: "var(--graphite)" }}>
+                  <span id="slip-note" className="t-label" style={{ color: "var(--page-fg-2)" }}>
                     Shafin replies within 24 hours.
                   </span>
                 </div>

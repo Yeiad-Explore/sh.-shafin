@@ -3,7 +3,8 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { LeaderLabel, Arrow } from "./bits";
+import { Arrow } from "./bits";
+import Scramble from "./Scramble";
 import { useSite } from "./SiteProvider";
 import { prefersReducedMotion, whenReady } from "@/lib/motion";
 
@@ -14,13 +15,13 @@ const short = (deg: string) =>
     .replace("Higher Secondary Certificate", "HSC")
     .replace("Secondary School Certificate", "SSC");
 
-/** A pressed herbarium specimen, shown until a real portrait is uploaded in /admin. */
+/** A line-drawn plant specimen, shown until a real portrait is uploaded in /admin. */
 function PressedSpecimen() {
   const d = (ms: number) => ({ "--delay": `${ms}ms`, "--dur": "1100ms" }) as CSSProperties;
   return (
     <svg viewBox="0 0 320 400" role="img" aria-label="Ink drawing of a pressed plant specimen on herbarium paper">
-      <rect x="0" y="0" width="320" height="400" fill="var(--paper)" />
-      <g className="art-ink" style={{ stroke: "var(--ink)" }}>
+      <rect x="0" y="0" width="320" height="400" fill="var(--page-bg)" />
+      <g className="art-ink" style={{ stroke: "var(--page-fg)" }}>
         <path className="draw" pathLength={1} style={d(0)} d="M168 372 C 164 300, 172 230, 160 160 C 152 112, 162 78, 176 46" />
         <path className="draw" pathLength={1} style={d(250)} d="M166 318 C 130 310, 98 286, 84 250 C 120 250, 150 276, 166 318 Z" />
         <path className="draw" pathLength={1} style={d(300)} d="M166 318 L 100 258" strokeWidth="0.8" />
@@ -35,11 +36,11 @@ function PressedSpecimen() {
         <path className="draw" pathLength={1} style={d(1000)} d="M168 372 C 160 380, 150 384, 140 382 M168 372 C 176 382, 188 386, 198 384 M168 372 C 168 382, 166 390, 162 396" strokeWidth="0.8" />
       </g>
       <g className="appear" style={{ "--delay": "1200ms" } as CSSProperties}>
-        <rect x="196" y="318" width="108" height="66" fill="none" stroke="var(--ink)" strokeWidth="0.8" />
-        <text x="204" y="336" className="art-label" style={{ fill: "var(--ink)", fontSize: 8 }}>HERBARIUM</text>
-        <text x="204" y="352" className="art-label" style={{ fill: "var(--graphite)", fontSize: 7 }}>DHAKA COLLEGE</text>
-        <text x="204" y="366" className="art-label" style={{ fill: "var(--graphite)", fontSize: 7 }}>DEPT. OF BOTANY</text>
-        <text x="204" y="378" className="art-label" style={{ fill: "var(--graphite)", fontSize: 7 }}>COLL. S.H. SHAFIN</text>
+        <rect x="196" y="318" width="108" height="66" fill="none" stroke="var(--page-fg)" strokeWidth="0.8" />
+        <text x="204" y="336" className="art-label" style={{ fill: "var(--page-fg)", fontSize: 8 }}>HERBARIUM</text>
+        <text x="204" y="352" className="art-label" style={{ fill: "var(--page-fg-2)", fontSize: 7 }}>DHAKA COLLEGE</text>
+        <text x="204" y="366" className="art-label" style={{ fill: "var(--page-fg-2)", fontSize: 7 }}>DEPT. OF BOTANY</text>
+        <text x="204" y="378" className="art-label" style={{ fill: "var(--page-fg-2)", fontSize: 7 }}>COLL. S.H. SHAFIN</text>
       </g>
     </svg>
   );
@@ -47,7 +48,7 @@ function PressedSpecimen() {
 
 export default function Hero() {
   const { data } = useSite();
-  const { settings, education, experience } = data;
+  const { settings, education, experience, subjects } = data;
   const rootRef = useRef<HTMLElement>(null);
 
   const teachingSince = experience.length ? Math.min(...experience.map((e) => e.start_year)) : 2022;
@@ -104,25 +105,58 @@ export default function Hero() {
     };
   }, []);
 
+  const ticker = [
+    `Teaching since ${teachingSince}`,
+    "SSC & HSC",
+    ...subjects.map((x) => x.name),
+    ...(degreeLine ? [degreeLine] : []),
+    "Free trial class",
+    "National curriculum",
+  ];
+
   return (
     <section id="home" ref={rootRef} className="hero" aria-labelledby="hero-name">
+      <div className="hero__floor" aria-hidden="true" />
       <div className="wrap">
         <div className="hero__grid">
-          <h1 id="hero-name" className="hero__name t-display t-hero" aria-label="Samiul Haque Shafin">
-            {["Samiul", "Haque", "Shafin"].map((w, i) => (
-              <span key={w} className="split-mask" style={{ display: "block", overflow: "clip", paddingLeft: i === 1 ? "0.5em" : undefined }} aria-hidden="true">
-                <span className="hero__line-inner" style={{ display: "block" }}>
-                  {w}
+          <div className="hero__main">
+            <p className="hero__kicker hero__copy-item t-label">
+              <span className="hero__pulse" aria-hidden="true" />
+              <Scramble text={`Science teacher · Dhaka · Since ${teachingSince}`} delay={1250} />
+            </p>
+            <h1 id="hero-name" className="hero__name t-display t-hero" aria-label="Samiul Haque Shafin">
+              {["Samiul", "Haque", "Shafin"].map((w, i) => (
+                <span key={w} className="split-mask" aria-hidden="true">
+                  <span className={`hero__line-inner ${i === 2 ? "hero__name-glow" : ""}`}>{w}</span>
                 </span>
-              </span>
-            ))}
-          </h1>
+              ))}
+            </h1>
+
+            <div className="hero__copy">
+              <p className="hero__headline hero__copy-item">{settings.hero_headline}</p>
+              <p className="hero__sub hero__copy-item">{settings.hero_subline}</p>
+              <div className="hero__ctas hero__copy-item">
+                <a href={data.trialSlots.length ? "#schedule" : "#contact"} className="btn btn--ink">
+                  Book a free trial <Arrow />
+                </a>
+                <a href="#courses" className="btn btn--ghost">
+                  See courses
+                </a>
+              </div>
+              <div className="hero__seed-row">
+                <span className="hero__seed" data-growth="seed" data-gx="center" aria-hidden="true" />
+              </div>
+            </div>
+          </div>
 
           <div className="hero__photo">
-            <figure className="specimen hero__photo-frame" style={{ margin: 0 }}>
-              <span className="tape tape--tl" aria-hidden="true" />
-              <span className="tape tape--br" aria-hidden="true" />
-              <div className="specimen__media">
+            <div className="hero__orbit" aria-hidden="true">
+              <span />
+              <span />
+              <i />
+            </div>
+            <figure className="holo hero__photo-frame">
+              <div className="specimen__media holo__media">
                 {settings.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={settings.photo_url} alt="Portrait of Samiul Haque Shafin" width={800} height={1000} fetchPriority="high" style={{ objectPosition: "50% 20%" }} />
@@ -130,49 +164,48 @@ export default function Hero() {
                   <PressedSpecimen />
                 )}
               </div>
-              <figcaption className="specimen__label t-label">
-                <span>Specimen no. {teachingSince}</span>
+              <span className="holo__scan" aria-hidden="true" />
+              <span className="holo__corner holo__corner--tl" aria-hidden="true" />
+              <span className="holo__corner holo__corner--tr" aria-hidden="true" />
+              <span className="holo__corner holo__corner--bl" aria-hidden="true" />
+              <span className="holo__corner holo__corner--br" aria-hidden="true" />
+              <figcaption className="holo__label t-label">
+                <span>ID · SHS-{teachingSince}</span>
                 <span>Science teacher · Dhaka</span>
               </figcaption>
             </figure>
-            <div className="hero__leaders">
+            <ul className="hero__leaders" aria-label="At a glance">
               {degreeLine && (
-                <LeaderLabel length={40} delay={0}>
+                <li className="hud-chip" style={{ "--delay": "0ms" } as CSSProperties}>
+                  <i aria-hidden="true" />
                   {degreeLine.replace(",", " —")}
-                </LeaderLabel>
+                </li>
               )}
-              <LeaderLabel length={64} delay={120}>
+              <li className="hud-chip" style={{ "--delay": "120ms" } as CSSProperties}>
+                <i aria-hidden="true" />
                 Teaching since {teachingSince}
-              </LeaderLabel>
-              <LeaderLabel length={28} delay={240}>
+              </li>
+              <li className="hud-chip" style={{ "--delay": "240ms" } as CSSProperties}>
+                <i aria-hidden="true" />
                 SSC · HSC · National curriculum
-              </LeaderLabel>
-            </div>
-          </div>
-
-          <div className="hero__copy">
-            <p className="hero__headline hero__copy-item">{settings.hero_headline}</p>
-            <p className="hero__sub hero__copy-item">{settings.hero_subline}</p>
-            <div className="hero__ctas hero__copy-item">
-              <a href={data.trialSlots.length ? "#schedule" : "#contact"} className="btn btn--ink">
-                Book a free trial <Arrow />
-              </a>
-              <a href="#courses" className="btn btn--ghost">
-                See courses
-              </a>
-            </div>
-            <div className="hero__seed-row">
-              <span className="hero__seed" data-growth="seed" data-gx="center" aria-hidden="true" />
-            </div>
+              </li>
+            </ul>
           </div>
         </div>
+      </div>
 
-        <div className="hero__facts t-label">
-          <ul>
-            <li>Teaching since {teachingSince}</li>
-            <li>SSC &amp; HSC</li>
-            {degreeLine && <li>{degreeLine}</li>}
-          </ul>
+      <div className="marquee hero__copy-item" aria-hidden="true">
+        <div className="marquee__track">
+          {[0, 1].map((k) => (
+            <span className="marquee__set" key={k}>
+              {ticker.map((t) => (
+                <span key={t} className="marquee__item">
+                  {t}
+                  <i>✦</i>
+                </span>
+              ))}
+            </span>
+          ))}
         </div>
       </div>
     </section>
