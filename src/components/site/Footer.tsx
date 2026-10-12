@@ -1,10 +1,23 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { useSite } from "./SiteProvider";
 import { useGrowthReach } from "@/lib/growth";
-import { BLOOM_EVENT, scrollToTarget } from "@/lib/motion";
-import { waLink } from "@/lib/format";
+import { BLOOM_EVENT, EASE_OUT, scrollToTarget } from "@/lib/motion";
+import { telLink, waLink } from "@/lib/format";
+import { useYear } from "@/lib/hooks";
+import type { SectionKey } from "@/lib/types";
+
+const SECTION_LABEL: Record<SectionKey, string> = {
+  about: "About",
+  subjects: "Subjects",
+  courses: "Courses",
+  schedule: "Schedule",
+  results: "Results",
+  faq: "FAQ",
+  contact: "Contact",
+};
 
 const PETALS = 6;
 
@@ -31,7 +44,7 @@ function Bloom({ open }: { open: boolean }) {
   );
 }
 
-export default function Footer() {
+export default function Footer({ sections }: { sections: SectionKey[] }) {
   const { data } = useSite();
   const { settings } = data;
   const [open, setOpen] = useState(false);
@@ -43,13 +56,28 @@ export default function Footer() {
     return () => window.removeEventListener(BLOOM_EVENT, on);
   }, []);
 
-  const wa = waLink(settings.whatsapp);
+  const reduce = useReducedMotion();
+  const year = useYear();
+  const wa = waLink(settings.whatsapp, "Hi, I'd like to know about your science classes.");
+  const tel = telLink(settings.phone);
+  const since = Math.min(...(data.experience.length ? data.experience.map((e) => e.start_year) : [2022]));
   const socials = [
     settings.facebook && { href: settings.facebook, label: "Facebook" },
     settings.youtube && { href: settings.youtube, label: "YouTube" },
     settings.instagram && { href: settings.instagram, label: "Instagram" },
-    wa && { href: wa, label: "WhatsApp" },
   ].filter(Boolean) as { href: string; label: string }[];
+  const contact = [
+    wa && settings.whatsapp && { href: wa, label: "WhatsApp", value: settings.whatsapp, external: true },
+    tel && settings.phone && { href: tel, label: "Phone", value: settings.phone, external: false },
+    settings.email && { href: `mailto:${settings.email}`, label: "Email", value: settings.email, external: false },
+  ].filter(Boolean) as { href: string; label: string; value: string; external: boolean }[];
+  const place = settings.teaching_place || settings.address;
+  const col = (i: number) => ({
+    initial: reduce ? false : { opacity: 0, y: 16 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "0px 0px -8% 0px" },
+    transition: { duration: 0.6, ease: EASE_OUT, delay: i * 0.08 },
+  });
 
   return (
     <footer className="footer" aria-label="Footer">
@@ -58,33 +86,87 @@ export default function Footer() {
           <Bloom open={open} />
         </div>
         <p className="t-label muted" style={{ margin: "0 0 12px" }}>
-          Grown in Dhaka · since {Math.min(...(data.experience.length ? data.experience.map((e) => e.start_year) : [2022]))}
+          Grown in Dhaka · since {since}
         </p>
         <p className="footer__name t-display" aria-label="Md. Samiul Haque Shafin">
           Samiul Haque Shafin
         </p>
-        <div className="footer__row t-label">
-          <div className="footer__links">
-            {settings.email && (
-              <a href={`mailto:${settings.email}`} className="link-draw">
-                {settings.email}
+
+        <div className="footer__grid">
+          <motion.div className="footer__cta" {...col(0)}>
+            <p className="footer__cta-title">Start with one free class.</p>
+            <p className="muted">Biology, Physics, Chemistry and Math for SSC and HSC students.</p>
+            {sections.includes("contact") && (
+              <a href="#contact" className="btn btn--ink btn--sm">
+                Book a free trial
               </a>
             )}
-            {socials.map((s) => (
-              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="link-draw">
-                {s.label}
-              </a>
-            ))}
-            <a href="#contact" className="link-draw">
-              Enroll
-            </a>
-          </div>
-          <div className="footer__links">
-            <span style={{ display: "inline-flex", alignItems: "center", minHeight: 44 }}>© 2026 S.H. Shafin</span>
-            <button type="button" className="link-draw" onClick={() => scrollToTarget(0, { duration: 1.1 })}>
-              Back to top ↑
-            </button>
-          </div>
+          </motion.div>
+
+          {(contact.length > 0 || place || sections.includes("contact")) && (
+            <motion.div {...col(1)}>
+              <h2 className="footer__head t-label">Contact</h2>
+              <ul className="footer__list">
+                {sections.includes("contact") && (
+                  <li>
+                    <span className="t-label muted">Enrollment</span>
+                    <a href="#contact" className="link-draw">
+                      Send the enrollment form
+                    </a>
+                  </li>
+                )}
+                {contact.map((c) => (
+                  <li key={c.label}>
+                    <span className="t-label muted">{c.label}</span>
+                    <a href={c.href} className="link-draw" {...(c.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+                      {c.value}
+                    </a>
+                  </li>
+                ))}
+                {place && (
+                  <li>
+                    <span className="t-label muted">Classes</span>
+                    <span>{place}</span>
+                  </li>
+                )}
+              </ul>
+            </motion.div>
+          )}
+
+          <motion.nav aria-label="Footer" {...col(2)}>
+            <h2 className="footer__head t-label">Explore</h2>
+            <ul className="footer__list footer__list--links">
+              {sections.map((k) => (
+                <li key={k}>
+                  <a href={`#${k}`} className="link-draw">
+                    {SECTION_LABEL[k]}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </motion.nav>
+
+          {socials.length > 0 && (
+            <motion.div {...col(3)}>
+              <h2 className="footer__head t-label">Follow</h2>
+              <ul className="footer__list footer__list--links">
+                {socials.map((so) => (
+                  <li key={so.label}>
+                    <a href={so.href} target="_blank" rel="noopener noreferrer" className="link-draw">
+                      {so.label} ↗
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </div>
+
+        <div className="footer__row t-label">
+          <span>© {year} S.H. Shafin · Science teacher, Dhaka</span>
+          <button type="button" className="link-draw" onClick={() => scrollToTarget(0, { duration: 1.1 })}>
+            Back to top ↑
+          </button>
         </div>
       </div>
     </footer>

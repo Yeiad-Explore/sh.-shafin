@@ -60,7 +60,7 @@ export default function MotionRuntime() {
           }
         }
       },
-      { rootMargin: "0px 0px -20% 0px", threshold: 0 },
+      { rootMargin: "0px 0px -6% 0px", threshold: 0 },
     );
     const observeAll = (scope: ParentNode) =>
       scope.querySelectorAll("[data-reveal]:not(.is-in), [data-inview]:not(.is-in)").forEach((el) => io.observe(el));

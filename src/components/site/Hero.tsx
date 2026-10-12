@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform, type Variants } from "motion/react";
 import { Arrow } from "./bits";
-import Scramble from "./Scramble";
 import { useSite } from "./SiteProvider";
-import { prefersReducedMotion, whenReady } from "@/lib/motion";
+import { EASE_OUT, whenReady } from "@/lib/motion";
 
 const short = (deg: string) =>
   deg
@@ -46,65 +44,57 @@ function PressedSpecimen() {
   );
 }
 
+/** The main CTA leans a few pixels towards the pointer. Mouse only, and still with reduced motion. */
+function MagneticCta({ href, children }: { href: string; children: ReactNode }) {
+  const reduce = useReducedMotion();
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 180, damping: 18, mass: 0.5 });
+  const sy = useSpring(y, { stiffness: 180, damping: 18, mass: 0.5 });
+  const onMove = (e: PointerEvent<HTMLAnchorElement>) => {
+    if (reduce || e.pointerType !== "mouse") return;
+    const r = e.currentTarget.getBoundingClientRect();
+    x.set((e.clientX - (r.left + r.width / 2)) * 0.16);
+    y.set((e.clientY - (r.top + r.height / 2)) * 0.22);
+  };
+  const reset = () => {
+    x.set(0);
+    y.set(0);
+  };
+  return (
+    <motion.a href={href} className="btn btn--ink" style={reduce ? undefined : { x: sx, y: sy }} onPointerMove={onMove} onPointerLeave={reset}>
+      {children}
+    </motion.a>
+  );
+}
+
+const pillList: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.62 } },
+};
+const pillItem: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } },
+};
+
 export default function Hero() {
   const { data } = useSite();
   const { settings, education, experience, subjects } = data;
   const rootRef = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+  const [ready, setReady] = useState(false);
+  useEffect(() => whenReady(() => setReady(true)), []);
+
+  // Scrolling out: the name drifts up, the portrait lags behind and the copy fades.
+  const { scrollYProgress } = useScroll({ target: rootRef, offset: ["start start", "end start"] });
+  const nameY = useTransform(scrollYProgress, [0, 1], [0, -110]);
+  const photoY = useTransform(scrollYProgress, [0, 1], [0, 70]);
+  const fade = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
 
   const teachingSince = experience.length ? Math.min(...experience.map((e) => e.start_year)) : 2022;
   const degree = education[0];
   const degreeLine = degree ? `${short(degree.degree)}${degree.concentration ? ` ${degree.concentration}` : ""}, ${degree.institution}` : null;
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const reduced = prefersReducedMotion();
-    const lines = root.querySelectorAll<HTMLElement>(".hero__line-inner");
-    const photo = root.querySelector(".hero__photo-frame");
-    const leaders = root.querySelector(".hero__leaders");
-    const copy = root.querySelectorAll<HTMLElement>(".hero__copy-item");
-    const seed = root.querySelector(".hero__seed");
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    gsap.set(lines, { y: 0, yPercent: reduced ? 0 : 110 });
-    gsap.set(copy, { opacity: 0, y: reduced ? 0 : 16 });
-
-    const stop = whenReady(() => {
-      if (reduced) {
-        gsap.to(lines, { opacity: 1, duration: 0.2 });
-        photo?.classList.add("is-in");
-        leaders?.classList.add("is-in");
-        gsap.to(copy, { opacity: 1, duration: 0.2 });
-        seed?.classList.add("is-in");
-        return;
-      }
-      gsap.to(lines, { yPercent: 0, duration: 0.9, ease: "expo.out", stagger: 0.045 });
-      timers.push(setTimeout(() => photo?.classList.add("is-in"), 300));
-      timers.push(setTimeout(() => leaders?.classList.add("is-in"), 900));
-      gsap.to(copy, { opacity: 1, y: 0, duration: 0.48, ease: "power3.out", stagger: 0.06, delay: 1.2 });
-      timers.push(setTimeout(() => seed?.classList.add("is-in"), 1300));
-    });
-
-    // Scrolling out: the name settles back and drifts up slightly faster than the page.
-    let st: ScrollTrigger | undefined;
-    if (!reduced) {
-      const tween = gsap.to(root.querySelector(".hero__name"), {
-        scale: 0.92,
-        yPercent: -14,
-        transformOrigin: "left top",
-        ease: "none",
-        scrollTrigger: { trigger: root, start: "top top", end: "bottom top", scrub: true },
-      });
-      st = tween.scrollTrigger;
-    }
-
-    return () => {
-      stop();
-      timers.forEach(clearTimeout);
-      st?.kill();
-    };
-  }, []);
-
+  const stats = [degreeLine?.replace(",", " —"), `Teaching since ${teachingSince}`, "SSC · HSC · National curriculum"].filter(Boolean) as string[];
   const ticker = [
     `Teaching since ${teachingSince}`,
     "SSC & HSC",
@@ -114,87 +104,109 @@ export default function Hero() {
     "National curriculum",
   ];
 
+  // The entrance waits for the first-visit preloader; with reduced motion everything starts in place.
+  const on = ready || !!reduce;
+  const rise = (delay: number) => ({
+    initial: reduce ? false : { opacity: 0, y: 16 },
+    animate: on ? { opacity: 1, y: 0 } : undefined,
+    transition: { duration: 0.6, ease: EASE_OUT, delay },
+  });
+  const reveal = { duration: 0.8, ease: EASE_OUT, delay: 0.28 };
+
   return (
     <section id="home" ref={rootRef} className="hero" aria-labelledby="hero-name">
       <div className="hero__floor" aria-hidden="true" />
       <div className="wrap">
         <div className="hero__grid">
           <div className="hero__main">
-            <p className="hero__kicker hero__copy-item t-label">
+            <motion.p className="hero__kicker t-label" {...rise(0.05)}>
               <span className="hero__pulse" aria-hidden="true" />
-              <Scramble text={`Science teacher · Dhaka · Since ${teachingSince}`} delay={1250} />
-            </p>
-            <h1 id="hero-name" className="hero__name t-display t-hero" aria-label="Samiul Haque Shafin">
+              Science teacher · Dhaka · Since {teachingSince}
+            </motion.p>
+            <motion.h1 id="hero-name" className="hero__name t-display t-hero" aria-label="Samiul Haque Shafin" style={reduce ? undefined : { y: nameY }}>
               {["Samiul", "Haque", "Shafin"].map((w, i) => (
                 <span key={w} className="split-mask" aria-hidden="true">
-                  <span className={`hero__line-inner ${i === 2 ? "hero__name-glow" : ""}`}>{w}</span>
+                  <motion.span
+                    className={`hero__line-inner ${i === 2 ? "hero__name-glow" : ""}`}
+                    initial={reduce ? false : { y: "110%" }}
+                    animate={on ? { y: "0%" } : undefined}
+                    transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.12 + i * 0.08 }}
+                  >
+                    {w}
+                  </motion.span>
                 </span>
               ))}
-            </h1>
+            </motion.h1>
 
-            <div className="hero__copy">
-              <p className="hero__headline hero__copy-item">{settings.hero_headline}</p>
-              <p className="hero__sub hero__copy-item">{settings.hero_subline}</p>
-              <div className="hero__ctas hero__copy-item">
-                <a href={data.trialSlots.length ? "#schedule" : "#contact"} className="btn btn--ink">
+            <motion.div className="hero__copy" style={reduce ? undefined : { opacity: fade }}>
+              <motion.p className="hero__headline" {...rise(0.42)}>
+                {settings.hero_headline}
+              </motion.p>
+              <motion.p className="hero__sub" {...rise(0.5)}>
+                {settings.hero_subline}
+              </motion.p>
+              <motion.ul className="hero__stats" aria-label="At a glance" variants={pillList} initial={reduce ? false : "hidden"} animate={on ? "show" : undefined}>
+                {stats.map((t) => (
+                  <motion.li key={t} className="stat-pill t-label" variants={pillItem}>
+                    {t}
+                  </motion.li>
+                ))}
+              </motion.ul>
+              <motion.div className="hero__ctas" {...rise(0.82)}>
+                <MagneticCta href={data.trialSlots.length ? "#schedule" : "#contact"}>
                   Book a free trial <Arrow />
-                </a>
+                </MagneticCta>
                 <a href="#courses" className="btn btn--ghost">
                   See courses
                 </a>
-              </div>
+              </motion.div>
               <div className="hero__seed-row">
-                <span className="hero__seed" data-growth="seed" data-gx="center" aria-hidden="true" />
+                <motion.span
+                  className="hero__seed"
+                  data-growth="seed"
+                  data-gx="center"
+                  aria-hidden="true"
+                  initial={reduce ? false : { scale: 0 }}
+                  animate={on ? { scale: 1 } : undefined}
+                  transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.95 }}
+                />
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          <div className="hero__photo">
+          <motion.div className="hero__photo" style={reduce ? undefined : { y: photoY }}>
             <div className="hero__orbit" aria-hidden="true">
               <span />
               <span />
               <i />
             </div>
-            <figure className="holo hero__photo-frame">
-              <div className="specimen__media holo__media">
-                {settings.photo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={settings.photo_url} alt="Portrait of Samiul Haque Shafin" width={800} height={1000} fetchPriority="high" style={{ objectPosition: "50% 20%" }} />
-                ) : (
-                  <PressedSpecimen />
-                )}
-              </div>
+            <figure className={`holo ${on ? "is-in" : ""}`}>
+              <motion.div
+                className="holo__media"
+                initial={reduce ? false : { clipPath: "inset(100% 0% 0% 0%)" }}
+                animate={on ? { clipPath: "inset(0% 0% 0% 0%)" } : undefined}
+                transition={reveal}
+              >
+                <motion.div className="holo__img" initial={reduce ? false : { scale: 1.12 }} animate={on ? { scale: 1 } : undefined} transition={reveal}>
+                  {settings.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={settings.photo_url} alt="Portrait of Samiul Haque Shafin" width={800} height={1000} fetchPriority="high" style={{ objectPosition: "50% 20%" }} />
+                  ) : (
+                    <PressedSpecimen />
+                  )}
+                </motion.div>
+              </motion.div>
               <span className="holo__scan" aria-hidden="true" />
               <span className="holo__corner holo__corner--tl" aria-hidden="true" />
               <span className="holo__corner holo__corner--tr" aria-hidden="true" />
               <span className="holo__corner holo__corner--bl" aria-hidden="true" />
               <span className="holo__corner holo__corner--br" aria-hidden="true" />
-              <figcaption className="holo__label t-label">
-                <span>ID · SHS-{teachingSince}</span>
-                <span>Science teacher · Dhaka</span>
-              </figcaption>
             </figure>
-            <ul className="hero__leaders" aria-label="At a glance">
-              {degreeLine && (
-                <li className="hud-chip" style={{ "--delay": "0ms" } as CSSProperties}>
-                  <i aria-hidden="true" />
-                  {degreeLine.replace(",", " —")}
-                </li>
-              )}
-              <li className="hud-chip" style={{ "--delay": "120ms" } as CSSProperties}>
-                <i aria-hidden="true" />
-                Teaching since {teachingSince}
-              </li>
-              <li className="hud-chip" style={{ "--delay": "240ms" } as CSSProperties}>
-                <i aria-hidden="true" />
-                SSC · HSC · National curriculum
-              </li>
-            </ul>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      <div className="marquee hero__copy-item" aria-hidden="true">
+      <motion.div className="marquee" aria-hidden="true" {...rise(0.9)}>
         <div className="marquee__track">
           {[0, 1].map((k) => (
             <span className="marquee__set" key={k}>
@@ -207,7 +219,7 @@ export default function Hero() {
             </span>
           ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

@@ -1,34 +1,13 @@
 import type { CSSProperties, ReactNode } from "react";
-import { pad2 } from "@/lib/format";
-import Scramble from "./Scramble";
 
-export function PlateHeader({
-  n,
-  label,
-  title,
-  id,
-  growth = true,
-}: {
-  n: number;
-  label: string;
-  title: ReactNode;
-  id?: string;
-  growth?: boolean;
-}) {
+export function PlateHeader({ label, title, id, growth = true }: { label: string; title: ReactNode; id?: string; growth?: boolean }) {
   return (
     <header className="plate-header" data-inview="">
-      <div className="plate-header__meta t-label">
-        <span className="plate-header__idx">{pad2(n)}</span>
-        <span className="plate-header__slash" aria-hidden="true">
-          {"//"}
-        </span>
-        <Scramble text={label} />
-        <span className="plate-header__rule" />
-      </div>
+      <p className="plate-header__eyebrow t-label">{label}</p>
       <h2 id={id} className="plate-header__title t-display t-h2" data-split="">
         {title}
       </h2>
-      {growth && <span data-growth="section" data-gx="left" data-gdx="-28" style={{ position: "absolute", left: 0, top: 6, width: 1, height: 1 }} aria-hidden="true" />}
+      {growth && <span data-growth="section" style={{ position: "absolute", left: 0, top: 6, width: 1, height: 1 }} aria-hidden="true" />}
     </header>
   );
 }

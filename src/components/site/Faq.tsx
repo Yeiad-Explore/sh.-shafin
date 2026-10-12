@@ -5,8 +5,21 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { PlateHeader } from "./bits";
 import { useSite } from "./SiteProvider";
 import { pad2 } from "@/lib/format";
+import { EASE_OUT } from "@/lib/motion";
 
-export default function Faq({ n }: { n: number }) {
+/** Plus that turns into a minus: the icon rotates half a turn while its vertical bar folds away. */
+function PlusMinus({ open }: { open: boolean }) {
+  const reduce = useReducedMotion();
+  const t = { duration: reduce ? 0 : 0.45, ease: EASE_OUT };
+  return (
+    <motion.span className="pm" aria-hidden="true" animate={{ rotate: open ? 180 : 0 }} transition={t}>
+      <i />
+      <motion.i animate={{ scaleY: open ? 0 : 1 }} transition={t} />
+    </motion.span>
+  );
+}
+
+export default function Faq() {
   const { data } = useSite();
   const [open, setOpen] = useState<string | null>(null);
   const reduce = useReducedMotion();
@@ -15,12 +28,12 @@ export default function Faq({ n }: { n: number }) {
   return (
     <section id="faq" className="plate" aria-labelledby="faq-title">
       <div className="wrap">
-        <PlateHeader n={n} label="FAQ" id="faq-title" title="Questions parents ask" />
+        <PlateHeader label="FAQ" id="faq-title" title="Questions parents ask" />
         <div className="faq" data-reveal="fade">
           {data.faqs.map((f, i) => {
             const isOpen = open === f.id;
             return (
-              <div className="faq__item" key={f.id}>
+              <div className={`faq__item ${isOpen ? "is-open" : ""}`} key={f.id}>
                 <h3 style={{ margin: 0 }}>
                   <button
                     type="button"
@@ -32,7 +45,7 @@ export default function Faq({ n }: { n: number }) {
                   >
                     <span className="t-label muted">Q.{pad2(i + 1)}</span>
                     <span className="faq__q-text">{f.question}</span>
-                    <span className="plus" aria-hidden="true" />
+                    <PlusMinus open={isOpen} />
                   </button>
                 </h3>
                 <AnimatePresence initial={false}>
@@ -45,9 +58,15 @@ export default function Faq({ n }: { n: number }) {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: reduce ? 0 : 0.32, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{ duration: reduce ? 0 : 0.5, ease: EASE_OUT }}
                     >
-                      <p>{f.answer}</p>
+                      <motion.p
+                        initial={reduce ? false : { y: -8 }}
+                        animate={{ y: 0 }}
+                        transition={{ duration: 0.5, ease: EASE_OUT }}
+                      >
+                        {f.answer}
+                      </motion.p>
                     </motion.div>
                   )}
                 </AnimatePresence>

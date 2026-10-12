@@ -390,7 +390,7 @@ export function MathDrawing({ active }: { active: boolean }) {
       <text className="art-label appear" style={dl(700)} x={O.x - 28} y={O.y + KY + 4}>−1</text>
       <line className="art-ink art-thin" x1={O.x} y1={O.y - KY} x2="600" y2={O.y - KY} strokeDasharray="2 6" opacity="0.4" />
       <line className="art-ink art-thin" x1={O.x} y1={O.y + KY} x2="600" y2={O.y + KY} strokeDasharray="2 6" opacity="0.4" />
-      <path className="art-c draw" pathLength={1} style={{ ...dl(800, 1600), strokeWidth: 1.6 }} d={sinPath} />
+      <path className="art-c draw math-curve" pathLength={1} style={{ ...dl(800, 1600), strokeWidth: 1.6 }} d={sinPath} />
       <text className="art-label art-formula appear" style={{ ...dl(2200), fill: "var(--c)" }} x="430" y="100">y = sin x</text>
       <g className="appear" style={dl(2000)}>
         <line ref={lineRef} className="art-ink" />

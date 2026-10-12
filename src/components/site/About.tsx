@@ -74,7 +74,7 @@ function TimelineItem({ node }: { node: Node }) {
   );
 }
 
-export default function About({ n }: { n: number }) {
+export default function About() {
   const { data } = useSite();
   const { settings, education, experience, specialties, subjects } = data;
   const nodes = useMemo(() => buildNodes(education, experience, subjects), [education, experience, subjects]);
@@ -100,7 +100,7 @@ export default function About({ n }: { n: number }) {
   return (
     <section id="about" className="plate about" aria-labelledby="about-title">
       <div className="wrap">
-        <PlateHeader n={n} label="About" id="about-title" title="A botanist who teaches" />
+        <PlateHeader label="About" id="about-title" title="A botanist who teaches" />
         <div className="about__grid">
           <div className="about__left">
             <p ref={bioRef} className="about__bio">
@@ -157,13 +157,13 @@ export default function About({ n }: { n: number }) {
               Growth record
             </div>
             <div style={{ position: "relative" }}>
-              <span data-growth="point" data-gx="center" data-gy="top" className="timeline-anchor" aria-hidden="true" />
+              <span data-growth="point" data-gy="top" className="timeline-anchor" aria-hidden="true" />
               <ol className="timeline" aria-label="Education and teaching timeline">
                 {nodes.map((node) => (
                   <TimelineItem key={node.key} node={node} />
                 ))}
               </ol>
-              <span data-growth="point" data-gx="center" data-gy="bottom" className="timeline-anchor timeline-anchor--end" aria-hidden="true" />
+              <span data-growth="point" data-gy="bottom" className="timeline-anchor timeline-anchor--end" aria-hidden="true" />
             </div>
           </div>
         </div>

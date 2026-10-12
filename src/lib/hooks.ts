@@ -13,6 +13,11 @@ export function useMounted(): boolean {
   return useClientValue(() => true, false);
 }
 
+/** The current year; prerendered pages use the year the site was built for. */
+export function useYear(): number {
+  return useClientValue(() => new Date().getFullYear(), 2026);
+}
+
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const todayDay = () => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
 

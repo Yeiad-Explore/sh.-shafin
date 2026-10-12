@@ -17,7 +17,7 @@ import WhatsAppButton from "@/components/site/WhatsAppButton";
 import ChatWidget from "@/components/site/ChatWidget";
 import type { SectionKey } from "@/lib/types";
 
-const SECTION: Record<SectionKey, (props: { n: number }) => React.ReactNode> = {
+const SECTION: Record<SectionKey, () => React.ReactNode> = {
   about: About,
   subjects: Subjects,
   courses: Courses,
@@ -83,7 +83,6 @@ export default async function Home() {
           <span className="fx__blob fx__blob--b" />
           <span className="fx__blob fx__blob--c" />
         </div>
-        <div className="fx__grid" />
         <div className="fx__spot" />
         <div className="fx__noise" />
       </div>
@@ -92,12 +91,12 @@ export default async function Home() {
         <GrowthLine />
         <main id="main">
           <Hero />
-          {visible.map((k, i) => {
+          {visible.map((k) => {
             const Section = SECTION[k];
-            return <Section key={k} n={i + 2} />;
+            return <Section key={k} />;
           })}
         </main>
-        <Footer />
+        <Footer sections={visible} />
       </div>
       <WhatsAppButton />
       <ChatWidget />

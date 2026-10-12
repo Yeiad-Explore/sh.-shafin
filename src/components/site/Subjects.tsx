@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { motion, useMotionValue, useTransform, type MotionValue } from "motion/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { PlateHeader, Arrow } from "./bits";
@@ -89,11 +90,41 @@ function Plate({ subject, index, total, active }: { subject: Subject; index: num
   );
 }
 
+/** One segment of the scroller's progress bar, in its subject's colour. The first is full from the start. */
+function ProgressSegment({ progress, i, n, color }: { progress: MotionValue<number>; i: number; n: number; color: string }) {
+  const steps = Math.max(1, n - 1);
+  const scaleX = useTransform(progress, i === 0 ? [0, 1] : [(i - 1) / steps, i / steps], i === 0 ? [1, 1] : [0, 1]);
+  return (
+    <span className="subjects__seg">
+      <motion.i style={{ scaleX, background: color }} />
+    </span>
+  );
+}
+
+/** The Math graph draws itself as its panel arrives, tied to scroll. */
+function scrubMathCurve(plates: HTMLElement[], containerAnimation?: gsap.core.Animation) {
+  const plate = plates.find((p) => p.dataset.subject === "math");
+  const curve = plate?.querySelector<SVGPathElement>(".math-curve");
+  if (!plate || !curve) return () => {};
+  const st = ScrollTrigger.create({
+    trigger: plate,
+    ...(containerAnimation ? { containerAnimation, start: "left 85%", end: "left 15%" } : { start: "top 80%", end: "center 45%" }),
+    scrub: true,
+    onUpdate: (self) => {
+      curve.style.strokeDashoffset = String(1 - self.progress);
+    },
+  });
+  return () => {
+    st.kill();
+    curve.style.strokeDashoffset = "";
+  };
+}
+
 /**
- * PL. 03 — on desktop the section pins and scrolls sideways through four full-screen plates while the
+ * On desktop the section pins and scrolls sideways through four full-screen plates while the
  * growth line splits into four coloured branches. On phones (and with reduced motion) the plates stack.
  */
-export default function Subjects({ n }: { n: number }) {
+export default function Subjects() {
   const { data } = useSite();
   const subjects = data.subjects;
   const sectionRef = useRef<HTMLElement>(null);
@@ -103,6 +134,7 @@ export default function Subjects({ n }: { n: number }) {
   const [horizontal, setHorizontal] = useState(false);
   const [index, setIndex] = useState(0);
   const [activeSet, setActiveSet] = useState<Set<string>>(new Set());
+  const progress = useMotionValue(0);
 
   useEffect(() => {
     const mm = gsap.matchMedia();
@@ -141,7 +173,11 @@ export default function Subjects({ n }: { n: number }) {
             { rootMargin: "0px 0px -20% 0px" },
           );
           plates.forEach((p) => io.observe(p));
-          return () => io.disconnect();
+          const unscrub = scrubMathCurve(plates);
+          return () => {
+            io.disconnect();
+            unscrub();
+          };
         }
 
         const track = trackRef.current!;
@@ -149,11 +185,10 @@ export default function Subjects({ n }: { n: number }) {
         const distance = () => track.scrollWidth - window.innerWidth;
         const svg = branchRef.current;
         const branches = Array.from(svg?.querySelectorAll<SVGPathElement>("path") ?? []);
-        let progress = 0;
         let started = false;
         const paintBranches = () => {
           branches.forEach((b, bi) => {
-            const local = bi === 0 ? (started ? 1 : 0) : Math.min(1, Math.max(0, progress * (plates.length - 1) - bi + 1.1));
+            const local = bi === 0 ? (started ? 1 : 0) : Math.min(1, Math.max(0, progress.get() * (plates.length - 1) - bi + 1.1));
             b.style.strokeDashoffset = String(1 - local);
           });
         };
@@ -182,7 +217,7 @@ export default function Subjects({ n }: { n: number }) {
         };
         layoutBranches();
         ScrollTrigger.addEventListener("refresh", layoutBranches);
-        // triggers further down the page (paper → slate) were created before this pin existed
+        // triggers further down the page were created before this pin existed
         requestAnimationFrame(() => {
           ScrollTrigger.sort();
           ScrollTrigger.refresh();
@@ -204,7 +239,7 @@ export default function Subjects({ n }: { n: number }) {
               setIndex(i);
               const slug = plates[i]?.dataset.subject as Subject["slug"] | undefined;
               if (slug) document.documentElement.style.setProperty("--accent-current", SUBJECT_VAR[slug]);
-              progress = self.progress;
+              progress.set(self.progress);
               paintBranches();
             },
           },
@@ -228,6 +263,7 @@ export default function Subjects({ n }: { n: number }) {
             },
           }),
         );
+        const unscrub = scrubMathCurve(plates, tween);
         // the first plate is visible as soon as the pin starts
         const first = ScrollTrigger.create({
           trigger: pin,
@@ -242,6 +278,7 @@ export default function Subjects({ n }: { n: number }) {
         return () => {
           ScrollTrigger.removeEventListener("refresh", layoutBranches);
           triggers.forEach((t) => t.kill());
+          unscrub();
           first.kill();
           tween.scrollTrigger?.kill();
           tween.kill();
@@ -250,19 +287,24 @@ export default function Subjects({ n }: { n: number }) {
       },
     );
     return () => mm.revert();
-  }, [subjects.length, horizontal]);
+  }, [subjects.length, horizontal, progress]);
 
   if (!subjects.length) return null;
 
   return (
     <section id="subjects" ref={sectionRef} className={`subjects ${horizontal ? "" : "subjects--stack"}`} aria-labelledby="subjects-title">
       <div className="wrap">
-        <PlateHeader n={n} label="Subjects" id="subjects-title" title="Four subjects, one way of thinking" />
+        <PlateHeader label="Subjects" id="subjects-title" title="Four subjects, one way of thinking" />
       </div>
       <div ref={pinRef} className="subjects__pin">
         <div className="subjects__counter t-label" aria-hidden="true">
           <span style={{ color: SUBJECT_VAR[subjects[index]?.slug ?? "biology"] }}>●</span>
           {index + 1} / {subjects.length}
+        </div>
+        <div className="subjects__progress" aria-hidden="true">
+          {subjects.map((s, i) => (
+            <ProgressSegment key={s.slug} progress={progress} i={i} n={subjects.length} color={SUBJECT_VAR[s.slug]} />
+          ))}
         </div>
         <div ref={trackRef} className="subjects__track">
           <svg ref={branchRef} className="subjects__branches" aria-hidden="true" style={{ height: "100%" }}>
@@ -278,7 +320,7 @@ export default function Subjects({ n }: { n: number }) {
           ))}
         </div>
       </div>
-      <span data-growth="point" data-gx="left" data-gdx="40" style={{ display: "block", height: 1 }} aria-hidden="true" />
+      <span data-growth="point" style={{ display: "block", height: 1 }} aria-hidden="true" />
     </section>
   );
 }

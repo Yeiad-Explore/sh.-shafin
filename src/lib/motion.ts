@@ -14,6 +14,9 @@ export function getLenis() {
   return lenis;
 }
 
+/** The site's ease-out curve, for Framer Motion transitions of 400–800ms. */
+export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+
 export function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;

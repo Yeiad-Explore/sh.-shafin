@@ -1,72 +1,70 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { motion, useReducedMotion } from "motion/react";
-import { PlateHeader, LeafGlyph, tilt } from "./bits";
+import { animate, motion, useInView, useReducedMotion } from "motion/react";
+import { PlateHeader, tilt } from "./bits";
 import { useSite } from "./SiteProvider";
-import { useGrowthReach } from "@/lib/growth";
-import type { Result } from "@/lib/types";
+import { seatsLeft } from "@/lib/format";
+import { EASE_OUT } from "@/lib/motion";
+import { useYear } from "@/lib/hooks";
 
-function Odometer({ value }: { value: number }) {
+/** Counts up from zero once it scrolls into view. The real number is in the markup for no-JS and screen readers. */
+function CountUp({ value }: { value: number }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [run, setRun] = useState(false);
-  const digits = String(value).split("");
+  const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setRun(true);
-          io.disconnect();
-        }
+    if (el && !reduce && !inView) el.textContent = "0";
+  }, [reduce, inView]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !inView || reduce) return;
+    const controls = animate(0, value, {
+      duration: 0.8,
+      ease: EASE_OUT,
+      onUpdate: (v) => {
+        el.textContent = String(Math.round(v));
       },
-      { threshold: 0.5 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+    });
+    return () => controls.stop();
+  }, [inView, value, reduce]);
 
   return (
-    <span ref={ref} aria-label={String(value)} role="img" style={{ display: "inline-flex" }}>
-      {digits.map((d, i) => (
-        <span className="odo" key={i} aria-hidden="true">
-          <span
-            className="odo__col"
-            style={{ transform: `translateY(-${run ? Number(d) : 0}em)`, "--delay": `${i * 90}ms` } as CSSProperties}
-          >
-            {Array.from({ length: 10 }, (_, k) => (
-              <span key={k}>{k}</span>
-            ))}
-          </span>
-        </span>
-      ))}
-    </span>
+    <>
+      <span className="sr-only">{value}</span>
+      <span ref={ref} aria-hidden="true">
+        {value}
+      </span>
+    </>
   );
 }
 
-function Readout({ r }: { r: Result }) {
-  const [leaf, setLeaf] = useState(false);
-  const ref = useGrowthReach<HTMLDivElement>(() => setLeaf(true));
-  return (
-    <div ref={ref} className="readout" data-reveal="fade">
-      <LeafGlyph className={`readout__leaf ${leaf ? "is-in" : ""}`} />
-      <div className="readout__num">
-        <Odometer value={r.value} />
-        {r.suffix && <span style={{ fontSize: "0.5em", marginLeft: 4 }}>{r.suffix}</span>}
-      </div>
-      <div style={{ marginTop: 10 }}>{r.label}</div>
-      <div className="t-label muted">
-        {r.exam} · {r.year}
-      </div>
-    </div>
-  );
+interface Stat {
+  key: string;
+  value: number;
+  suffix?: string | null;
+  label: string;
+  note?: string;
 }
 
-export default function Results({ n }: { n: number }) {
+export default function Results() {
   const { data } = useSite();
-  const { results, testimonials } = data;
+  const { results, testimonials, experience, subjects, courses, batches } = data;
+
+  const year = useYear();
+  // Only numbers the site actually holds: published results first, then counts from the live data.
+  const since = experience.length ? Math.min(...experience.map((e) => e.start_year)) : null;
+  const stats: Stat[] = [
+    ...results.map((r) => ({ key: r.id, value: r.value, suffix: r.suffix, label: r.label, note: `${r.exam} · ${r.year}` })),
+    ...(since ? [{ key: "years", value: Math.max(1, year - since), label: "Years teaching", note: `Since ${since}` }] : []),
+    ...(subjects.length ? [{ key: "subjects", value: subjects.length, label: "Subjects", note: "SSC & HSC" }] : []),
+    ...(courses.length ? [{ key: "courses", value: courses.length, label: "Courses" }] : []),
+    ...(batches.length ? [{ key: "batches", value: batches.length, label: "Weekly batches" }] : []),
+    ...(batches.length ? [{ key: "seats", value: batches.reduce((n, b) => n + seatsLeft(b), 0), label: "Seats open now" }] : []),
+  ];
   const trackRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const [limit, setLimit] = useState(0);
@@ -88,14 +86,28 @@ export default function Results({ n }: { n: number }) {
   return (
     <section id="results" className="plate results" aria-labelledby="results-title">
       <div className="wrap">
-        <PlateHeader n={n} label="Results" id="results-title" title="What students say" />
+        <PlateHeader label="Results" id="results-title" title="What students say" />
 
-        {results.length > 0 && (
-          <div className="readouts">
-            {results.map((r) => (
-              <Readout key={r.id} r={r} />
+        {stats.length > 0 && (
+          <dl className="stats">
+            {stats.map((st, i) => (
+              <motion.div
+                key={st.key}
+                className="stats__item"
+                initial={reduce ? false : { opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+                transition={{ duration: 0.5, ease: EASE_OUT, delay: i * 0.07 }}
+              >
+                <dt className="t-label">{st.label}</dt>
+                <dd className="stats__num">
+                  <CountUp value={st.value} />
+                  {st.suffix && <span className="stats__suffix">{st.suffix}</span>}
+                </dd>
+                {st.note && <dd className="stats__note t-label">{st.note}</dd>}
+              </motion.div>
             ))}
-          </div>
+          </dl>
         )}
 
         {testimonials.length > 0 ? (
@@ -143,7 +155,6 @@ export default function Results({ n }: { n: number }) {
             </p>
           </div>
         )}
-        <span data-growth="point" data-gx="left" data-gdx="-28" style={{ display: "block", height: 1, marginTop: 40 }} aria-hidden="true" />
       </div>
     </section>
   );

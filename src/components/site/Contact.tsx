@@ -6,7 +6,8 @@ import { PlateHeader, Arrow } from "./bits";
 import { useSite } from "./SiteProvider";
 import { SUBJECT_VAR, fmtClass, telLink, waLink } from "@/lib/format";
 import { getBrowserClient } from "@/lib/supabase";
-import { triggerBloom } from "@/lib/motion";
+import { EASE_OUT, triggerBloom } from "@/lib/motion";
+import SuccessCheck from "./SuccessCheck";
 import type { SubjectSlug } from "@/lib/types";
 
 interface FormState {
@@ -75,26 +76,7 @@ function Field({
   );
 }
 
-function Stamp() {
-  return (
-    <svg viewBox="0 0 170 170" aria-hidden="true">
-      <defs>
-        <path id="received-arc" d="M85 85 m-58 0 a58 58 0 1 1 116 0 a58 58 0 1 1 -116 0" />
-      </defs>
-      <circle cx="85" cy="85" r="80" fill="none" stroke="currentColor" strokeWidth="3" />
-      <circle cx="85" cy="85" r="70" fill="none" stroke="currentColor" strokeWidth="1" />
-      <circle cx="85" cy="85" r="44" fill="none" stroke="currentColor" strokeWidth="1" />
-      <text fill="currentColor" style={{ fontFamily: "var(--font-mono-stack)", fontSize: 11, letterSpacing: "0.22em" }}>
-        <textPath href="#received-arc">S.H. SHAFIN · ENROLLMENT DESK · DHAKA ·</textPath>
-      </text>
-      <text x="85" y="92" textAnchor="middle" fill="currentColor" style={{ fontFamily: "var(--font-mono-stack)", fontSize: 17, letterSpacing: "0.12em", fontWeight: 500 }}>
-        RECEIVED
-      </text>
-    </svg>
-  );
-}
-
-export default function Contact({ n }: { n: number }) {
+export default function Contact() {
   const { data, enrollCourseId, subjectById } = useSite();
   const { settings, courses, subjects } = data;
   const [f, setF] = useState<FormState>(EMPTY);
@@ -162,7 +144,7 @@ export default function Contact({ n }: { n: number }) {
   return (
     <section id="contact" className="plate" aria-labelledby="contact-title">
       <div className="wrap">
-        <PlateHeader n={n} label="Contact" id="contact-title" title="Start with one free class" />
+        <PlateHeader label="Contact" id="contact-title" title="Start with one free class" />
         <div className="contact__grid">
           <div style={{ position: "relative" }}>
             <form className={`slip ${status === "sent" ? "is-sent" : ""}`} onSubmit={submit} noValidate aria-describedby="slip-note" data-reveal="fade">
@@ -250,7 +232,7 @@ export default function Contact({ n }: { n: number }) {
                 </div>
 
                 <div className="slip__submit">
-                  <button type="submit" className="btn btn--ink" data-growth="end" data-gx="left" data-gdx="-28">
+                  <button type="submit" className="btn btn--ink">
                     {status === "sending" ? "Sending…" : "Send enrollment request"} <Arrow />
                   </button>
                   <span id="slip-note" className="t-label" style={{ color: "var(--page-fg-2)" }}>
@@ -271,36 +253,28 @@ export default function Contact({ n }: { n: number }) {
             <AnimatePresence>
               {status === "sent" && (
                 <motion.div
-                  className="stamp"
-                  initial={reduce ? { opacity: 0 } : { scale: 1.4, rotate: -20, opacity: 0 }}
-                  animate={reduce ? { opacity: 0.92 } : { scale: 1, rotate: -8, opacity: 0.92 }}
-                  transition={reduce ? { duration: 0.2 } : { type: "spring", stiffness: 380, damping: 18, delay: 0.25 }}
+                  className="slip__done"
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: reduce ? 0.2 : 0.5, ease: EASE_OUT, delay: reduce ? 0 : 0.15 }}
                 >
-                  <Stamp />
+                  <SuccessCheck size={72} />
+                  <p className="slip__done-title">Request received</p>
+                  <p className="slip__done-note">Shafin replies within 24 hours.</p>
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => {
+                      setF(EMPTY);
+                      setStatus("idle");
+                    }}
+                  >
+                    Send another
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
-            {status === "sent" && (
-              <motion.p
-                className="t-label"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                style={{ marginTop: 18 }}
-              >
-                Received — Shafin will reply within 24 hours.{" "}
-                <button
-                  type="button"
-                  className="link-draw link-draw--on"
-                  onClick={() => {
-                    setF(EMPTY);
-                    setStatus("idle");
-                  }}
-                >
-                  Send another
-                </button>
-              </motion.p>
-            )}
           </div>
 
           <aside className="contact__direct" aria-label="Direct contact" data-reveal="fade" style={{ "--delay": "120ms" } as CSSProperties}>
@@ -367,6 +341,8 @@ export default function Contact({ n }: { n: number }) {
             )}
           </aside>
         </div>
+        {/* keeps the growth line in the margin past the form, until it turns into the footer flower */}
+        <span data-growth="point" style={{ display: "block", height: 1, marginTop: 40 }} aria-hidden="true" />
       </div>
     </section>
   );

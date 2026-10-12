@@ -91,6 +91,11 @@ export default function GrowthLine() {
       svg.style.height = `${root.scrollHeight}px`;
       svg.querySelector("#growth-beam")?.setAttribute("y2", String(root.scrollHeight));
 
+      // Between the seed and the flower the line runs in a lane in the left margin, so it never crosses content.
+      const wrap = root.querySelector<HTMLElement>("main .wrap");
+      const contentLeft = wrap ? wrap.getBoundingClientRect().left + parseFloat(getComputedStyle(wrap).paddingLeft) : 80;
+      const lane = mobile ? 12 : Math.max(16, contentLeft - ox - 28);
+
       const anchors = Array.from(root.querySelectorAll<HTMLElement>("[data-growth]")).filter(
         (el) => el.offsetParent !== null || el.getClientRects().length > 0,
       );
@@ -105,7 +110,7 @@ export default function GrowthLine() {
         let y = gy === "top" ? r.top : gy === "bottom" ? r.bottom : r.top + r.height / 2;
         y += Number(el.dataset.gdy ?? 0);
         const docY = y + window.scrollY - originY;
-        const px = mobile && kind !== "seed" ? 12 : x - ox;
+        const px = kind === "seed" || kind === "end" ? x - ox : lane;
         const prev = pts[pts.length - 1];
         if (prev && docY <= prev.y + 8) continue;
         pts.push({ x: px, y: docY, curl: mobile && kind === "section" });
@@ -144,7 +149,7 @@ export default function GrowthLine() {
       strandRefs.current.forEach((el) => el?.setAttribute("d", ""));
       if (strandHost && !mobile) {
         const r = strandHost.getBoundingClientRect();
-        const x = r.left - ox + Number(strandHost.dataset.gdx ?? -28);
+        const x = lane;
         const top = r.top + window.scrollY - originY;
         const bottom = r.bottom + window.scrollY - originY;
         if (bottom - top > 260) {

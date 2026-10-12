@@ -18,21 +18,38 @@ import {
   seatsLeft,
   STATUS_LABEL,
 } from "@/lib/format";
-import { getLenis } from "@/lib/motion";
+import { EASE_OUT, getLenis } from "@/lib/motion";
 import { useClientValue, useMounted } from "@/lib/hooks";
 import type { Batch, Course } from "@/lib/types";
 
 const SPRING = { type: "spring" as const, stiffness: 220, damping: 26 };
 
+/** Seat dots: each ring appears in turn and the taken seats fill in, once the card scrolls into view. */
 function SeatDots({ batch }: { batch: Batch }) {
+  const reduce = useReducedMotion();
   const total = Math.min(batch.seats_total, 24);
   const taken = Math.min(batch.seats_taken, total);
   return (
-    <span className="seats" role="img" aria-label={`${seatsLeft(batch)} of ${batch.seats_total} seats left`}>
+    <motion.span
+      className="seats"
+      role="img"
+      aria-label={`${seatsLeft(batch)} of ${batch.seats_total} seats left`}
+      initial={reduce ? false : "hidden"}
+      whileInView="show"
+      viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.035 } } }}
+    >
       {Array.from({ length: total }, (_, i) => (
-        <i key={i} className={i < taken ? "is-taken" : ""} />
+        <motion.i key={i} variants={{ hidden: { scale: 0.4, opacity: 0 }, show: { scale: 1, opacity: 1, transition: { duration: 0.4, ease: EASE_OUT } } }}>
+          {i < taken && (
+            <motion.b
+              className="seats__fill"
+              variants={{ hidden: { scale: 0 }, show: { scale: 1, transition: { duration: 0.45, ease: EASE_OUT, delay: 0.25 } } }}
+            />
+          )}
+        </motion.i>
       ))}
-    </span>
+    </motion.span>
   );
 }
 
@@ -49,10 +66,17 @@ function trackGlow(e: PointerEvent<HTMLElement>) {
 
 function CourseCard({ course, batches, onDetails }: { course: Course; batches: Batch[]; onDetails: () => void }) {
   const { subjectById, enrollCourse } = useSite();
+  const reduce = useReducedMotion();
   const subject = course.subject_id ? subjectById.get(course.subject_id) : undefined;
   const b = bestBatch(batches);
   return (
-    <article className="ccard" onPointerMove={trackGlow} style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--page-fg)" } as CSSProperties}>
+    <motion.article
+      className="ccard"
+      onPointerMove={trackGlow}
+      style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--accent)" } as CSSProperties}
+      whileHover={reduce ? undefined : { y: -6 }}
+      transition={{ duration: 0.4, ease: EASE_OUT }}
+    >
       <span className="ccard__stripe" aria-hidden="true" />
       <span className="ccard__hint" aria-hidden="true">
         <LeaderLabel reverse length={36}>
@@ -105,7 +129,7 @@ function CourseCard({ course, batches, onDetails }: { course: Course; batches: B
           Enroll
         </button>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
@@ -336,7 +360,7 @@ const MODE_OPTS: { v: CourseFilter["mode"]; label: string }[] = [
   { v: "offline", label: "Offline" },
 ];
 
-export default function Courses({ n }: { n: number }) {
+export default function Courses() {
   const { data, filter, setFilter, subjectById } = useSite();
   const [openId, setOpenId] = useState<string | null>(null);
   const reduce = useReducedMotion();
@@ -364,7 +388,7 @@ export default function Courses({ n }: { n: number }) {
   return (
     <section id="courses" className="plate courses" aria-labelledby="courses-title">
       <div className="wrap">
-        <PlateHeader n={n} label="Courses" id="courses-title" title="Find your course" />
+        <PlateHeader label="Courses" id="courses-title" title="Find your course" />
 
         <div className="filters" role="group" aria-label="Filter courses">
           <div className="filters__row">
@@ -411,16 +435,16 @@ export default function Courses({ n }: { n: number }) {
           {visible.length} course{visible.length === 1 ? "" : "s"} shown
         </p>
 
-        <motion.div layout={!reduce} className="courses__grid" data-growth-strands="" data-gdx="-28">
+        <motion.div layout={!reduce} className="courses__grid" data-growth-strands="">
           <AnimatePresence mode="popLayout" initial={false}>
             {visible.map((c) => (
               <motion.div
                 key={c.id}
                 layout={!reduce}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96 }}
-                transition={reduce ? { duration: 0 } : { duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
+                transition={reduce ? { duration: 0 } : { duration: 0.5, ease: EASE_OUT }}
               >
                 <CourseCard course={c} batches={batchesByCourse.get(c.id) ?? []} onDetails={() => setOpenId(c.id)} />
               </motion.div>

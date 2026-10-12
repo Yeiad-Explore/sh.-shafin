@@ -7,6 +7,8 @@ import { PlateHeader, Arrow } from "./bits";
 import { useSite } from "./SiteProvider";
 import { DAYS, DAY_LONG, SUBJECT_VAR, fmtDate, fmtMode, fmtTime, seatStatus, seatsLeft, STATUS_LABEL } from "@/lib/format";
 import { getBrowserClient } from "@/lib/supabase";
+import { EASE_OUT } from "@/lib/motion";
+import SuccessCheck from "./SuccessCheck";
 import type { Batch } from "@/lib/types";
 
 function Tally({ n }: { n: number }) {
@@ -38,13 +40,13 @@ function Tally({ n }: { n: number }) {
   );
 }
 
-function Slot({ batch, delay }: { batch: Batch; delay?: number }) {
+function Slot({ batch }: { batch: Batch }) {
   const { courseById, subjectById } = useSite();
   const course = courseById.get(batch.course_id);
   const subject = course?.subject_id ? subjectById.get(course.subject_id) : undefined;
   const st = seatStatus(batch);
   return (
-    <div className="slot" style={{ "--delay": `${delay ?? 0}ms`, "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--accent)" } as CSSProperties}>
+    <div className="slot" style={{ "--c": subject ? SUBJECT_VAR[subject.slug] : "var(--accent)" } as CSSProperties}>
       <span className="slot__name">
         <i aria-hidden="true" />
         {batch.name}
@@ -58,9 +60,12 @@ function Slot({ batch, delay }: { batch: Batch; delay?: number }) {
   );
 }
 
+/** The week fills in day by day, left to right; today's column is lit. */
 function Timetable({ batches }: { batches: Batch[] }) {
   const rows = useMemo(() => Array.from(new Set(batches.map((b) => b.start_time))).sort(), [batches]);
   const cols = DAYS.length;
+  const today = useToday().day;
+  const reduce = useReducedMotion();
   return (
     <div className="tt" data-inview="" role="table" aria-label="Weekly timetable">
       <div className="tt__lines" aria-hidden="true">
@@ -77,8 +82,9 @@ function Timetable({ batches }: { batches: Batch[] }) {
           Time
         </div>
         {DAYS.map((d) => (
-          <div key={d} className="tt__head t-label" role="columnheader">
+          <div key={d} className={`tt__head t-label ${d === today ? "is-today" : ""}`} role="columnheader" aria-label={d === today ? `${DAY_LONG[d]}, today` : DAY_LONG[d]}>
             {d}
+            {d === today && <span className="tt__today">Today</span>}
           </div>
         ))}
       </div>
@@ -93,9 +99,17 @@ function Timetable({ batches }: { batches: Batch[] }) {
           {DAYS.map((d, di) => {
             const here = batches.filter((b) => b.start_time === time && b.days.includes(d));
             return (
-              <div key={d} className="tt__cell" role="cell" aria-label={here.length ? undefined : `${DAY_LONG[d]} ${fmtTime(time)}: no class`}>
+              <div key={d} className={`tt__cell ${d === today ? "is-today" : ""}`} role="cell" aria-label={here.length ? undefined : `${DAY_LONG[d]} ${fmtTime(time)}: no class`}>
                 {here.map((b) => (
-                  <Slot key={b.id} batch={b} delay={900 + di * 90 + ri * 40} />
+                  <motion.div
+                    key={b.id}
+                    initial={reduce ? false : { opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "0px 0px -8% 0px" }}
+                    transition={{ duration: 0.5, ease: EASE_OUT, delay: di * 0.08 + ri * 0.03 }}
+                  >
+                    <Slot batch={b} />
+                  </motion.div>
                 ))}
               </div>
             );
@@ -129,6 +143,7 @@ function DayPicker({ batches }: { batches: Batch[] }) {
             }}
           >
             {d}
+            {d === today && <span className="daypick__today" aria-label="today" />}
           </button>
         ))}
       </div>
@@ -140,10 +155,18 @@ function DayPicker({ batches }: { batches: Batch[] }) {
             initial={{ x: reduce ? 0 : dir * 40, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: reduce ? 0 : dir * -40, opacity: 0 }}
-            transition={{ duration: reduce ? 0.1 : 0.32, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: reduce ? 0.1 : 0.4, ease: EASE_OUT }}
             style={{ display: "grid", gap: 10 }}
           >
-            {list.length ? list.map((b) => <Slot key={b.id} batch={b} />) : <p className="muted t-label">No batches on {DAY_LONG[day]}.</p>}
+            {list.length ? (
+              list.map((b, i) => (
+                <motion.div key={b.id} initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: EASE_OUT, delay: i * 0.06 }}>
+                  <Slot batch={b} />
+                </motion.div>
+              ))
+            ) : (
+              <p className="muted t-label">No batches on {DAY_LONG[day]}.</p>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -254,15 +277,18 @@ function TrialBooking() {
         )}
       </AnimatePresence>
       {state === "done" && slot && (
-        <p role="status" className="t-label" style={{ marginTop: 24, padding: "14px 16px", border: "1px solid currentColor" }}>
-          ✓ Trial requested for {DAY_LONG[slot.day]} at {fmtTime(slot.start_time)}. Shafin will confirm by phone within 24 hours.
+        <p role="status" className="trial-done t-label">
+          <SuccessCheck size={36} />
+          <span>
+            Trial requested for {DAY_LONG[slot.day]} at {fmtTime(slot.start_time)}. Shafin will confirm by phone within 24 hours.
+          </span>
         </p>
       )}
     </div>
   );
 }
 
-export default function Schedule({ n }: { n: number }) {
+export default function Schedule() {
   const { data, courseById, enrollCourse } = useSite();
   const { batches, settings } = data;
   const today = useToday().iso;
@@ -274,7 +300,7 @@ export default function Schedule({ n }: { n: number }) {
   return (
     <section id="schedule" className="plate slate" aria-labelledby="schedule-title">
       <div className="wrap">
-        <PlateHeader n={n} label="Schedule" id="schedule-title" title="This week's board" />
+        <PlateHeader label="Schedule" id="schedule-title" title="This week's board" />
 
         {settings.notice_active && settings.notice && (
           <div className="notice" role="note" data-reveal="fade">

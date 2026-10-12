@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { getLenis, prefersReducedMotion, scrollToTarget } from "@/lib/motion";
-import { pad2 } from "@/lib/format";
+import { EASE_OUT, getLenis, prefersReducedMotion, scrollToTarget } from "@/lib/motion";
 import type { SectionKey } from "@/lib/types";
 
 const LABELS: Partial<Record<SectionKey, string>> = {
@@ -123,17 +122,16 @@ export default function Navbar({ sections }: { sections: SectionKey[] }) {
             S.H.S
           </a>
           <ul className="nav__links">
-            {links.map((k, i) => (
+            {links.map((k) => (
               <li key={k}>
                 <a href={`#${k}`} className={`nav__link ${active === k ? "is-active" : ""}`} aria-current={active === k ? "true" : undefined}>
-                  <span className="nav__link-n">{pad2(i + 1)}</span>
-                  <span className="nav__link-t">{LABELS[k]}</span>
+                  {LABELS[k]}
                   {active === k && (
                     <motion.span
                       layoutId="nav-leaf"
                       className="nav__leaf"
                       style={{ "--tint": TINT[k] } as CSSProperties}
-                      transition={{ type: "spring", stiffness: 220, damping: 26 }}
+                      transition={{ duration: 0.5, ease: EASE_OUT }}
                     />
                   )}
                 </a>
@@ -198,7 +196,6 @@ export default function Navbar({ sections }: { sections: SectionKey[] }) {
                     animate={{ y: 0 }}
                     transition={{ duration: reduced ? 0 : 0.9, ease: [0.16, 1, 0.3, 1], delay: reduced ? 0 : 0.15 + i * 0.045 }}
                   >
-                    <small>{pad2(i + 1)}</small>
                     {LABELS[k]}
                   </motion.a>
                 </li>
