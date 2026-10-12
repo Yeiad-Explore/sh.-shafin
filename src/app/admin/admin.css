@@ -58,6 +58,9 @@
   padding: 0 8px;
 }
 .adm-side__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   letter-spacing: 0.24em;
   font-size: 14px;
 }
@@ -849,6 +852,9 @@ textarea.adm-input {
   letter-spacing: -0.02em;
 }
 .adm-login__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   letter-spacing: 0.2em;
 }
 .adm-login__link {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { getBrowserClient } from "@/lib/supabase";
+import Logo from "@/components/site/Logo";
 
 // Opened from the "Reset your admin password" email. Supabase puts a one-time recovery
 // session in the URL hash; the browser client picks it up, then the new password is saved
@@ -52,7 +53,7 @@ export default function ResetPassword() {
   return (
     <main className="adm-login">
       <form className="adm-login__card" onSubmit={submit}>
-        <div className="adm-mono adm-login__mark">● S.H.S — Admin</div>
+        <div className="adm-mono adm-login__mark"><Logo size={18} /> S.H.S — Admin</div>
         <h1>New password</h1>
 
         {state === "checking" && <p className="adm-muted adm-mono">Checking the link…</p>}

@@ -3,8 +3,9 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { markReady } from "@/lib/motion";
+import Logo from "./Logo";
 
-/** PL. 00 — first visit only, max 1.4s: an ink dot drops, pulls into a stroke, S.H.S writes beside it. */
+/** First visit only, max 1.4s: the shutter logo scales in, then the screen clears. */
 export default function Preloader() {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -15,9 +16,7 @@ export default function Preloader() {
       markReady();
       return;
     }
-    const dot = el.querySelector(".preloader__dot");
-    const stem = el.querySelector(".preloader__stem");
-    const letters = el.querySelectorAll(".preloader__mono span");
+    const logo = el.querySelector(".preloader__logo");
     const finish = () => {
       html.classList.remove("preload");
       try {
@@ -26,11 +25,8 @@ export default function Preloader() {
       markReady();
     };
     const tl = gsap.timeline({ onComplete: finish });
-    tl.to(dot, { scale: 1, duration: 0.4, ease: "back.out(2.2)" })
-      .to(stem, { scaleY: 1, duration: 0.45, ease: "power2.inOut" }, 0.4)
-      .from(letters, { opacity: 0, duration: 0.05, stagger: 0.08 }, 0.45)
-      .to(stem, { scaleY: 6, opacity: 0, duration: 0.4, ease: "power3.in" }, 1.0)
-      .to(el, { opacity: 0, duration: 0.3, ease: "power1.out" }, 1.1);
+    tl.fromTo(logo, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(1.7)" })
+      .to(el, { opacity: 0, duration: 0.3, ease: "power1.out" }, 1.0);
     return () => {
       tl.kill();
       finish();
@@ -40,13 +36,7 @@ export default function Preloader() {
   return (
     <div ref={ref} className="preloader" aria-hidden="true">
       <div className="preloader__mark">
-        <span className="preloader__dot" />
-        <span className="preloader__stem" />
-        <span className="preloader__mono">
-          {"S.H.S".split("").map((c, i) => (
-            <span key={i}>{c}</span>
-          ))}
-        </span>
+        <Logo size={72} className="preloader__logo" />
       </div>
     </div>
   );

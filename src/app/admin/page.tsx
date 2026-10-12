@@ -10,6 +10,7 @@ import Enrollments from "@/components/admin/Enrollments";
 import SiteSettings from "@/components/admin/SiteSettings";
 import Dashboard from "@/components/admin/Dashboard";
 import Account from "@/components/admin/Account";
+import Logo from "@/components/site/Logo";
 
 function Login({ onError }: { onError: string | null }) {
   const sb = getBrowserClient()!;
@@ -60,7 +61,7 @@ function Login({ onError }: { onError: string | null }) {
     return (
       <main className="adm-login">
         <form className="adm-login__card" onSubmit={forgot}>
-          <div className="adm-mono adm-login__mark">● S.H.S — Admin</div>
+          <div className="adm-mono adm-login__mark"><Logo size={18} /> S.H.S — Admin</div>
           <h1>Reset password</h1>
           <p className="adm-muted" style={{ margin: 0 }}>
             Write the email you sign in with. We&apos;ll send a link to choose a new password.
@@ -90,7 +91,7 @@ function Login({ onError }: { onError: string | null }) {
   return (
     <main className="adm-login">
       <form className="adm-login__card" onSubmit={submit}>
-        <div className="adm-mono adm-login__mark">● S.H.S — Admin</div>
+        <div className="adm-mono adm-login__mark"><Logo size={18} /> S.H.S — Admin</div>
         <h1>Sign in</h1>
         <div className="adm-field">
           <label className="adm-label" htmlFor="email">
@@ -195,7 +196,7 @@ export default function AdminPage() {
       <div className="adm-shell">
         <aside className={`adm-side ${menuOpen ? "is-open" : ""}`}>
           <div className="adm-side__top">
-            <span className="adm-mono adm-side__mark">● S.H.S</span>
+            <span className="adm-mono adm-side__mark"><Logo size={18} /> S.H.S</span>
             <button type="button" className="adm-icon adm-side__menu" aria-expanded={menuOpen} aria-label="Menu" onClick={() => setMenuOpen((o) => !o)}>
               ☰
             </button>

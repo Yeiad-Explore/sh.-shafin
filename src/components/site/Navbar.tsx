@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { EASE_OUT, getLenis, prefersReducedMotion, scrollToTarget } from "@/lib/motion";
 import type { SectionKey } from "@/lib/types";
+import Logo from "./Logo";
 
 const LABELS: Partial<Record<SectionKey, string>> = {
   about: "About",
@@ -117,9 +118,8 @@ export default function Navbar({ sections }: { sections: SectionKey[] }) {
     <>
       <nav className={`nav ${hidden && !open ? "is-hidden" : ""} ${solid ? "is-solid" : ""}`} aria-label="Main">
         <div className="wrap nav__inner">
-          <a href="#home" className="nav__mono" aria-label="S.H. Shafin — back to top">
-            <span className="nav__mono-dot" />
-            S.H.S
+          <a href="#home" className="nav__brand" aria-label="S.H. Shafin — back to top">
+            <Logo size={32} />
           </a>
           <ul className="nav__links">
             {links.map((k) => (
