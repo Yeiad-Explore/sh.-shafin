@@ -33,7 +33,7 @@ function Plate({ subject, index, total, active }: { subject: Subject; index: num
   const hasCourses = data.courses.some((c) => c.subject_id === subject.id);
   const art =
     subject.slug === "biology" ? (
-      <BiologyDrawing />
+      <BiologyDrawing active={active} />
     ) : subject.slug === "chemistry" ? (
       <ChemistryDrawing />
     ) : subject.slug === "physics" ? (

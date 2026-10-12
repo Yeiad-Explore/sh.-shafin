@@ -3505,6 +3505,94 @@ textarea.field__input {
   transform: translate(20px, 20px) scale(0.3);
 }
 
+/* Biology, once drawn: the cell stays alive. Chloroplasts stream, the vacuole breathes,
+   the nucleus sends out ripples and sap climbs the midrib. Paused while the plate is off screen. */
+.bio-sap,
+.bio-pulse {
+  opacity: 0;
+}
+.bio-sap {
+  stroke-width: 5;
+  stroke-dasharray: 0.07 0.93;
+  filter: drop-shadow(0 0 6px var(--c));
+}
+.bio-pulse,
+.bio-vac,
+.bio-cp {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.js .is-in .bio-cp {
+  animation: bio-stream 7s ease-in-out calc(5400ms + var(--i) * 450ms) infinite;
+}
+.js .is-in .bio-vac {
+  animation: bio-breathe 6s ease-in-out 5400ms infinite;
+}
+.js .is-in .bio-pulse {
+  animation: bio-ripple 3.2s var(--ease-settle) 5600ms infinite;
+}
+.js .is-in .bio-pulse--late {
+  animation-delay: 7200ms;
+}
+.js .is-in .bio-sap {
+  animation: bio-sap 2.6s linear 5200ms infinite;
+}
+.js .is-in svg:not(.bio-live) :is(.bio-cp, .bio-vac, .bio-pulse, .bio-sap) {
+  animation-play-state: paused;
+}
+@keyframes bio-stream {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  25% {
+    translate: 7px -5px;
+    rotate: 8deg;
+  }
+  50% {
+    translate: 3px -10px;
+    rotate: -4deg;
+  }
+  75% {
+    translate: -6px -4px;
+    rotate: 6deg;
+  }
+}
+@keyframes bio-breathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.035;
+  }
+}
+@keyframes bio-ripple {
+  0% {
+    scale: 1;
+    opacity: 0.7;
+  }
+  100% {
+    scale: 1.9;
+    opacity: 0;
+  }
+}
+@keyframes bio-sap {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  10%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -0.93;
+    opacity: 0;
+  }
+}
+
 /* Chemistry: resonance flicker, once */
 .chem-res-b {
   opacity: 0;
@@ -3624,7 +3712,8 @@ textarea.field__input {
     transition: none;
   }
   .js .is-in .chem-res-a,
-  .js .is-in .chem-res-b {
+  .js .is-in .chem-res-b,
+  .js .is-in :is(.bio-cp, .bio-vac, .bio-pulse, .bio-sap) {
     animation: none;
   }
 }

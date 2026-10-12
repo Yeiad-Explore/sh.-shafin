@@ -15,14 +15,20 @@ const VEINS: [number, number][] = [
   [150, 74],
 ];
 
-export function BiologyDrawing({ simple = false }: { simple?: boolean }) {
+export function BiologyDrawing({ simple = false, active = false }: { simple?: boolean; active?: boolean }) {
   const veins = simple ? VEINS.filter((_, i) => i % 2 === 0) : VEINS;
   return (
-    <svg viewBox="0 0 680 520" role="img" aria-label="A leaf with its veins drawn from the midrib, zooming into a labelled plant cell: cell wall, nucleus, chloroplasts and vacuole.">
+    <svg
+      viewBox="0 0 680 520"
+      className={active ? "bio-live" : undefined}
+      role="img"
+      aria-label="A leaf with its veins drawn from the midrib, zooming into a labelled plant cell: cell wall, nucleus, chloroplasts and vacuole."
+    >
       {/* the leaf, which later shrinks into the corner as a 'specimen' with a zoom callout */}
       <g className="bio-leaf">
         <path className="art-c draw art-tint" pathLength={1} style={dl(0)} d="M300 470 C 170 404, 150 244, 300 40 C 450 244, 430 404, 300 470 Z" />
         <path className="art-c draw" pathLength={1} style={dl(300, 1200)} d="M300 504 L 300 58" />
+        <path className="art-c bio-sap" pathLength={1} d="M300 504 L 300 58" />
         {veins.map(([y, w], i) => (
           <g key={y}>
             <path className="art-c draw art-thin" pathLength={1} style={dl(700 + i * 120, 700)} d={`M300 ${y} Q ${300 - w * 0.45} ${y - 16} ${300 - w * 0.85} ${y - 50}`} />
@@ -38,9 +44,11 @@ export function BiologyDrawing({ simple = false }: { simple?: boolean }) {
         <rect className="art-ink draw" pathLength={1} style={dl(2900, 900)} x="196" y="104" width="300" height="320" rx="30" />
         <rect className="art-c draw art-thin" pathLength={1} style={dl(3100, 900)} x="206" y="114" width="280" height="300" rx="22" />
         {/* vacuole */}
-        <path className="art-ink draw art-thin" pathLength={1} style={dl(3400, 900)} d="M262 196 C 300 168, 380 172, 410 204 C 440 238, 424 330, 380 352 C 330 376, 268 360, 250 318 C 232 276, 236 214, 262 196 Z" />
+        <path className="art-ink draw art-thin bio-vac" pathLength={1} style={dl(3400, 900)} d="M262 196 C 300 168, 380 172, 410 204 C 440 238, 424 330, 380 352 C 330 376, 268 360, 250 318 C 232 276, 236 214, 262 196 Z" />
         {/* nucleus */}
         <circle className="art-ink draw" pathLength={1} style={dl(3700, 600)} cx="436" cy="170" r="30" />
+        <circle className="art-c bio-pulse" cx="436" cy="170" r="30" />
+        <circle className="art-c bio-pulse bio-pulse--late" cx="436" cy="170" r="30" />
         <circle className="art-dot bud" style={dl(4100)} cx="442" cy="166" r="7" />
         {/* chloroplasts */}
         {(simple
@@ -58,9 +66,11 @@ export function BiologyDrawing({ simple = false }: { simple?: boolean }) {
             ]
         ).map(([cx, cy, r], i) => (
           <g key={i} transform={`rotate(${r} ${cx} ${cy})`}>
-            <ellipse className="art-c draw art-tint" pathLength={1} style={dl(3900 + i * 120, 500)} cx={cx} cy={cy} rx="20" ry="9" />
-            <line className="art-c draw art-thin" pathLength={1} style={dl(4100 + i * 120, 300)} x1={cx - 10} y1={cy - 2} x2={cx + 10} y2={cy - 2} />
-            <line className="art-c draw art-thin" pathLength={1} style={dl(4150 + i * 120, 300)} x1={cx - 8} y1={cy + 3} x2={cx + 8} y2={cy + 3} />
+            <g className="bio-cp" style={{ "--i": i } as CSSProperties}>
+              <ellipse className="art-c draw art-tint" pathLength={1} style={dl(3900 + i * 120, 500)} cx={cx} cy={cy} rx="20" ry="9" />
+              <line className="art-c draw art-thin" pathLength={1} style={dl(4100 + i * 120, 300)} x1={cx - 10} y1={cy - 2} x2={cx + 10} y2={cy - 2} />
+              <line className="art-c draw art-thin" pathLength={1} style={dl(4150 + i * 120, 300)} x1={cx - 8} y1={cy + 3} x2={cx + 8} y2={cy + 3} />
+            </g>
           </g>
         ))}
         {/* labels */}
