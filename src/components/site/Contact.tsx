@@ -77,7 +77,7 @@ function Field({
 }
 
 export default function Contact() {
-  const { data, enrollCourseId, subjectById } = useSite();
+  const { data, enrollRequest, subjectById } = useSite();
   const { settings, courses, subjects } = data;
   const [f, setF] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
@@ -85,10 +85,10 @@ export default function Contact() {
   const reduce = useReducedMotion();
 
   // "Enroll" anywhere on the page arrives here with the course pre-selected.
-  const [appliedCourseId, setAppliedCourseId] = useState<string | null>(null);
-  if (enrollCourseId && enrollCourseId !== appliedCourseId) {
-    setAppliedCourseId(enrollCourseId);
-    const c = courses.find((x) => x.id === enrollCourseId);
+  const [appliedRequest, setAppliedRequest] = useState<typeof enrollRequest>(null);
+  if (enrollRequest && enrollRequest !== appliedRequest) {
+    setAppliedRequest(enrollRequest);
+    const c = courses.find((x) => x.id === enrollRequest.courseId);
     if (c) {
       const slug = c.subject_id ? subjectById.get(c.subject_id)?.slug : undefined;
       setF((prev) => ({
@@ -110,7 +110,7 @@ export default function Contact() {
     const errs = validate(f);
     setErrors(errs);
     if (Object.keys(errs).length) {
-      setTimeout(() => document.querySelector<HTMLElement>(".slip .is-error input, .slip .is-error select")?.focus({ preventScroll: true }), 0);
+      setTimeout(() => document.querySelector<HTMLElement>(".slip .is-error input, .slip .is-error select, .slip .is-error textarea")?.focus({ preventScroll: true }), 0);
       return;
     }
     setStatus("sending");

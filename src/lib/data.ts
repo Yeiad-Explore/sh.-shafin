@@ -36,6 +36,8 @@ export async function getSiteData(): Promise<SiteData> {
     if (settings.error || subjects.error) throw settings.error ?? subjects.error;
 
     const s = (settings.data ?? fallbackData.settings) as SiteSettings;
+    // A hidden course hides its batches too; otherwise they'd still show on the timetable and in the chat.
+    const courseIds = new Set((courses.data ?? []).map((c) => c.id));
     return {
       settings: {
         ...fallbackData.settings,
@@ -48,7 +50,7 @@ export async function getSiteData(): Promise<SiteData> {
       specialties: specialties.data ?? [],
       subjects: subjects.data ?? [],
       courses: courses.data ?? [],
-      batches: batches.data ?? [],
+      batches: (batches.data ?? []).filter((b) => courseIds.has(b.course_id)),
       trialSlots: trialSlots.data ?? [],
       testimonials: testimonials.data ?? [],
       results: results.data ?? [],

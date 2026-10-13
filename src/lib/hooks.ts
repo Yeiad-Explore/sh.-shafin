@@ -18,7 +18,11 @@ export function useYear(): number {
   return useClientValue(() => new Date().getFullYear(), 2026);
 }
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// Local date, not UTC: in Dhaka (UTC+6) toISOString() still reports yesterday until 6 AM.
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 const todayDay = () => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
 
 export function useToday() {

@@ -149,7 +149,7 @@ export default function Hero() {
                 ))}
               </motion.ul>
               <motion.div className="hero__ctas" {...rise(0.82)}>
-                <MagneticCta href={data.trialSlots.length ? "#schedule" : "#contact"}>
+                <MagneticCta href={data.trialSlots.length && settings.sections.schedule !== false ? "#schedule" : "#contact"}>
                   Book a free trial <Arrow />
                 </MagneticCta>
                 <a href="#courses" className="btn btn--ghost">

@@ -126,6 +126,7 @@ export default function TableManager({ def }: { def: TableDef }) {
   const persistOrder = async (next: Row[]) => {
     setRows(next);
     const changed = next.map((r, i) => ({ r, i })).filter(({ r, i }) => r.sort_order !== i);
+    if (!changed.length) return; // a drag that ended where it started
     const results = await Promise.all(changed.map(({ r, i }) => sb.from(def.table).update({ sort_order: i }).eq("id", r.id)));
     const err = results.find((x) => x.error)?.error;
     if (err) {

@@ -51,6 +51,12 @@ export default function SiteSettings() {
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => (p ? { ...p, [k]: v } : p));
 
+  // Also runs on blur, so a method typed without pressing Enter isn't lost on Save.
+  const addPayment = () => {
+    if (payDraft.trim()) set("payment_methods", [...s.payment_methods, payDraft.trim()]);
+    setPayDraft("");
+  };
+
   const moveSection = (i: number, d: number) => {
     const next = [...s.section_order];
     const [x] = next.splice(i, 1);
@@ -122,10 +128,10 @@ export default function SiteSettings() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    if (payDraft.trim()) set("payment_methods", [...s.payment_methods, payDraft.trim()]);
-                    setPayDraft("");
+                    addPayment();
                   }
                 }}
+                onBlur={addPayment}
               />
             </div>
           </div>

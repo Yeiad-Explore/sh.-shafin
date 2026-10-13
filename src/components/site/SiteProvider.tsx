@@ -17,7 +17,8 @@ interface SiteCtx {
   courseById: Map<string, Course>;
   filter: CourseFilter;
   setFilter: (f: Partial<CourseFilter>) => void;
-  enrollCourseId: string | null;
+  /** A fresh object per click, so enrolling in the same course twice still re-fills the form. */
+  enrollRequest: { courseId: string | null } | null;
   enrollCourse: (courseId: string | null) => void;
   showSubjectCourses: (slug: SubjectSlug) => void;
 }
@@ -26,7 +27,7 @@ const Ctx = createContext<SiteCtx | null>(null);
 
 export function SiteProvider({ data, children }: { data: SiteData; children: React.ReactNode }) {
   const [filter, setFilterState] = useState<CourseFilter>({ cls: "all", subject: "all", mode: "all" });
-  const [enrollCourseId, setEnrollCourseId] = useState<string | null>(null);
+  const [enrollRequest, setEnrollRequest] = useState<{ courseId: string | null } | null>(null);
 
   const subjectById = useMemo(() => new Map(data.subjects.map((s) => [s.id, s])), [data.subjects]);
   const subjectBySlug = useMemo(() => new Map(data.subjects.map((s) => [s.slug, s])), [data.subjects]);
@@ -35,7 +36,7 @@ export function SiteProvider({ data, children }: { data: SiteData; children: Rea
   const setFilter = useCallback((f: Partial<CourseFilter>) => setFilterState((prev) => ({ ...prev, ...f })), []);
 
   const enrollCourse = useCallback((courseId: string | null) => {
-    setEnrollCourseId(courseId);
+    setEnrollRequest({ courseId });
     requestAnimationFrame(() => scrollToTarget("#contact"));
   }, []);
 
@@ -52,11 +53,11 @@ export function SiteProvider({ data, children }: { data: SiteData; children: Rea
       courseById,
       filter,
       setFilter,
-      enrollCourseId,
+      enrollRequest,
       enrollCourse,
       showSubjectCourses,
     }),
-    [data, subjectById, subjectBySlug, courseById, filter, setFilter, enrollCourseId, enrollCourse, showSubjectCourses],
+    [data, subjectById, subjectBySlug, courseById, filter, setFilter, enrollRequest, enrollCourse, showSubjectCourses],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

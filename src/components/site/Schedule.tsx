@@ -61,13 +61,13 @@ function Slot({ batch }: { batch: Batch }) {
 }
 
 /** The week fills in day by day, left to right; today's column is lit. */
-function Timetable({ batches }: { batches: Batch[] }) {
+function Timetable({ batches, days }: { batches: Batch[]; days: string[] }) {
   const rows = useMemo(() => Array.from(new Set(batches.map((b) => b.start_time))).sort(), [batches]);
-  const cols = DAYS.length;
+  const cols = days.length;
   const today = useToday().day;
   const reduce = useReducedMotion();
   return (
-    <div className="tt" data-inview="" role="table" aria-label="Weekly timetable">
+    <div className="tt" data-inview="" role="table" aria-label="Weekly timetable" style={{ "--tt-cols": cols } as CSSProperties}>
       <div className="tt__lines" aria-hidden="true">
         {Array.from({ length: cols }, (_, i) => (
           <span
@@ -81,7 +81,7 @@ function Timetable({ batches }: { batches: Batch[] }) {
         <div className="tt__head t-label" role="columnheader">
           Time
         </div>
-        {DAYS.map((d) => (
+        {days.map((d) => (
           <div key={d} className={`tt__head t-label ${d === today ? "is-today" : ""}`} role="columnheader" aria-label={d === today ? `${DAY_LONG[d]}, today` : DAY_LONG[d]}>
             {d}
             {d === today && <span className="tt__today">Today</span>}
@@ -96,7 +96,7 @@ function Timetable({ batches }: { batches: Batch[] }) {
           <div className="tt__time t-label" role="rowheader">
             {fmtTime(time)}
           </div>
-          {DAYS.map((d, di) => {
+          {days.map((d, di) => {
             const here = batches.filter((b) => b.start_time === time && b.days.includes(d));
             return (
               <div key={d} className={`tt__cell ${d === today ? "is-today" : ""}`} role="cell" aria-label={here.length ? undefined : `${DAY_LONG[d]} ${fmtTime(time)}: no class`}>
@@ -120,17 +120,17 @@ function Timetable({ batches }: { batches: Batch[] }) {
   );
 }
 
-function DayPicker({ batches }: { batches: Batch[] }) {
+function DayPicker({ batches, days }: { batches: Batch[]; days: string[] }) {
   const today = useToday().day;
   const [picked, setDay] = useState<string | null>(null);
-  const day = picked ?? (DAYS.includes(today as (typeof DAYS)[number]) ? today : "Sat");
+  const day = picked ?? (days.includes(today) ? today : days[0]);
   const [dir, setDir] = useState(1);
   const reduce = useReducedMotion();
   const list = batches.filter((b) => b.days.includes(day)).sort((a, b) => a.start_time.localeCompare(b.start_time));
   return (
     <div className="daypick">
       <div className="daypick__tabs" role="tablist" aria-label="Day">
-        {DAYS.map((d) => (
+        {days.map((d) => (
           <button
             key={d}
             role="tab"
@@ -138,7 +138,7 @@ function DayPicker({ batches }: { batches: Batch[] }) {
             aria-selected={d === day}
             className="daypick__tab"
             onClick={() => {
-              setDir(DAYS.indexOf(d as (typeof DAYS)[number]) > DAYS.indexOf(day as (typeof DAYS)[number]) ? 1 : -1);
+              setDir(days.indexOf(d) > days.indexOf(day) ? 1 : -1);
               setDay(d);
             }}
           >
@@ -292,6 +292,8 @@ export default function Schedule() {
   const { data, courseById, enrollCourse } = useSite();
   const { batches, settings } = data;
   const today = useToday().iso;
+  // Friday is the weekend, so its column only appears when a batch actually meets then.
+  const days: string[] = batches.some((b) => b.days.includes("Fri")) ? [...DAYS, "Fri"] : [...DAYS];
   const upcoming = batches
     .filter((b) => b.start_date && b.start_date >= today)
     .sort((a, b) => (a.start_date ?? "").localeCompare(b.start_date ?? ""))
@@ -311,8 +313,8 @@ export default function Schedule() {
 
         {batches.length > 0 ? (
           <>
-            <Timetable batches={batches} />
-            <DayPicker batches={batches} />
+            <Timetable batches={batches} days={days} />
+            <DayPicker batches={batches} days={days} />
           </>
         ) : (
           <p className="muted">The new timetable is being set — book a free trial and Shafin will suggest a batch.</p>
