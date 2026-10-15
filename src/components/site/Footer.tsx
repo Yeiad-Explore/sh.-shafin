@@ -75,6 +75,9 @@ export default function Footer({ sections }: { sections: SectionKey[] }) {
     settings.email && { href: `mailto:${settings.email}`, label: "Email", value: settings.email, external: false },
   ].filter(Boolean) as { href: string; label: string; value: string; external: boolean }[];
   const place = settings.teaching_place || settings.address;
+  let trialHref: "#schedule" | "#contact" | null = null;
+  if (sections.includes("schedule") && data.trialSlots.length > 0) trialHref = "#schedule";
+  else if (sections.includes("contact")) trialHref = "#contact";
   const col = (i: number) => ({
     initial: reduce ? false : { opacity: 0, y: 16 },
     whileInView: { opacity: 1, y: 0 },
@@ -106,8 +109,8 @@ export default function Footer({ sections }: { sections: SectionKey[] }) {
           <motion.div className="footer__cta" {...col(0)}>
             <p className="footer__cta-title">Start with one free class.</p>
             <p className="muted">Biology, Physics, Chemistry and Math for SSC and HSC students.</p>
-            {sections.includes("contact") && (
-              <a href="#contact" className="btn btn--ink btn--sm">
+            {trialHref && (
+              <a href={trialHref} className="btn btn--ink btn--sm">
                 Book a free trial
               </a>
             )}
